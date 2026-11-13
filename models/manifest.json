@@ -1,0 +1,21 @@
+{
+  "upstream_repository": "https://github.com/jocelynxu01/singer-separation-paper",
+  "upstream_commit": "3f6ce09d53750b55f52801a24efff369dbd04846",
+  "variant": "FiLM, target-vocal loss only",
+  "sample_rate": 44100,
+  "embedding_sample_rate": 16000,
+  "n_fft": 4096,
+  "hop_length": 1024,
+  "files": [
+    {
+      "name": "embedding.pth",
+      "drive_id": "1DTzLtKgtxBdwuOD5D4K8b9Ugj8PSN-EA",
+      "sha256": "5f52e199edc0a753378bfbf335408dd3044828c9989684f602765e7169fbc1fc"
+    },
+    {
+      "name": "film.pth",
+      "drive_id": "1WdFjmlVQ7lA6YY2quQwxsYcmBDzaO39J",
+      "sha256": "7f90116504450d01ed39d7515345b37e5e49bfed7df68e88887fe7c9aee8a012"
+    }
+  ]
+}
