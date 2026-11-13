@@ -30,12 +30,15 @@ def verify_weights(directory):
             raise ValueError(f"模型 {item['name']} 校验失败，请重新下载官方权重。")
 
 
-def download_weights(directory=None):
+def download_weights(directory=None, progress=None, quiet=False):
     import gdown
 
     directory = Path(directory or ROOT / "models")
     directory.mkdir(parents=True, exist_ok=True)
-    for item in manifest()["files"]:
+    files = manifest()["files"]
+    for index, item in enumerate(files):
+        if progress:
+            progress(index / len(files), f"正在准备模型：{item['name']}")
         target = directory / item["name"]
         if target.exists() and sha256(target) == item["sha256"]:
             print(f"Verified: {target.name}", flush=True)
@@ -43,7 +46,7 @@ def download_weights(directory=None):
         temporary = target.with_suffix(".download")
         try:
             result = gdown.download(
-                id=item["drive_id"], output=str(temporary), use_cookies=False, quiet=False
+                id=item["drive_id"], output=str(temporary), use_cookies=False, quiet=quiet
             )
             if not result or sha256(temporary) != item["sha256"]:
                 raise RuntimeError(f"下载内容校验失败：{target.name}。未替换已有文件。")
@@ -51,3 +54,5 @@ def download_weights(directory=None):
         finally:
             temporary.unlink(missing_ok=True)
     verify_weights(directory)
+    if progress:
+        progress(1.0, "模型校验通过")

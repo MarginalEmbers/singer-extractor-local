@@ -64,7 +64,7 @@ def save_upload(file, directory):
         raise
 
 
-def build_app(cache_dir=None, output_dir=None, extractor_factory=Extractor):
+def build_app(cache_dir=None, output_dir=None, extractor_factory=Extractor, model_dir=None):
     # Windows registry MIME mappings can otherwise serve ES modules as text/plain.
     mimetypes.add_type("application/javascript", ".mjs")
     mimetypes.add_type("application/javascript", ".js")
@@ -132,7 +132,7 @@ def build_app(cache_dir=None, output_dir=None, extractor_factory=Extractor):
     @app.get("/api/health")
     def health():
         try:
-            verify_weights(ROOT / "models")
+            verify_weights(model_dir or ROOT / "models")
             weights = "ready"
         except ValueError as exc:
             weights = str(exc)

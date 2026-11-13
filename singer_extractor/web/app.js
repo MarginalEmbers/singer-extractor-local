@@ -1,4 +1,4 @@
-import { AudioTransport, clamp, formatTime, isCovered, selectionBetween, visibleWindow } from "./timeline.mjs?v=0.2.0";
+import { AudioTransport, clamp, formatTime, isCovered, selectionBetween, visibleWindow } from "./timeline.mjs?v=0.3.0";
 
 const $ = (id) => document.getElementById(id);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));

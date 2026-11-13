@@ -12,6 +12,8 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 build/
+.build/
+/singer_extractor/web/app.ico
 dist/
 *.wav
 *.mp3
