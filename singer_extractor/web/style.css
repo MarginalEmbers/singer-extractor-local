@@ -130,3 +130,7 @@ footer { max-width: 1560px; padding: 12px 32px 20px; margin: 0 auto; display: fl
 @media(max-width:780px) { .studio { grid-template-columns:minmax(0,1fr); } .inspector { border-left:0; border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } .inspector section+section { border-top:0; padding-top:0; margin-top:0; } .version { display:none; } .toolbar-spacer { flex:0; } }
 @media(max-width:540px) { main { padding:14px 10px; } .app-header { padding:12px; } .brand { font-size:11px; gap:7px; } .header-actions { gap:5px; } .inspector { grid-template-columns:minmax(0,1fr); } .inspector section+section { border-top:1px solid var(--line); padding-top:18px; } .track-row,.ruler-row { grid-template-columns:65px minmax(0,1fr); } .pan-row { margin-left:65px; } .editor { padding:12px; } .seek-label { flex-direction:column; gap:2px; } .track-label { font-size:12px; } .track-label small { font-size:10px; } .check { margin-left:0; } .transport { gap:8px; } button { min-height:40px; } .solo { min-height:28px; } .zoom-label input { width:70px; } .project-header { gap:8px; } .project-header h1 { font-size:16px; } footer { padding-inline:12px; } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; } }
+
+.candidate-row .wave-wrap { height: 82px; }
+#two-stage-hint, #candidate-scope { margin-top: 9px; }
+#legacy-reference { margin-top: 12px; }

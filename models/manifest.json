@@ -3,7 +3,7 @@
   "upstream_commit": "3f6ce09d53750b55f52801a24efff369dbd04846",
   "variant": "FiLM, target-vocal loss only",
   "sample_rate": 44100,
-  "embedding_sample_rate": 16000,
+  "embedding_sample_rate": 44100,
   "n_fft": 4096,
   "hop_length": 1024,
   "files": [

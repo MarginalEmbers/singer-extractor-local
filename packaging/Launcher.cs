@@ -14,8 +14,8 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
 [assembly: System.Reflection.AssemblyTitle("哦，金金的音道分离")]
-[assembly: System.Reflection.AssemblyVersion("0.4.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.4.0.0")]
+[assembly: System.Reflection.AssemblyVersion("0.5.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.5.0.0")]
 
 internal static class Launcher
 {
@@ -265,7 +265,7 @@ internal sealed class SetupWindow : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 110));
         layout.Controls.Add(new Label { Text = Launcher.Title, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(3, 0, 3, 16), Font = new Font(Font.FontFamily, 19F, FontStyle.Bold) });
-        layout.Controls.Add(new Label { Text = "这是在线安装版。首次需下载约 3–4 GB 运行环境，请预留至少 12 GiB 空间。\n安装到：" + Launcher.Runtime + "\n完成后使用独立桌面窗口，无需打开浏览器或安装 CUDA Toolkit。", AutoSize = true, MaximumSize = new Size(820, 0), Dock = DockStyle.Fill, Margin = new Padding(3, 0, 3, 16) });
+        layout.Controls.Add(new Label { Text = "这是在线安装版。首次需下载约 3–4 GB 运行环境，进入软件后另准备约 919 MB 模型，请预留至少 12 GiB 空间。\n安装到：" + Launcher.Runtime + "\n完成后使用独立桌面窗口，无需打开浏览器或安装 CUDA Toolkit。", AutoSize = true, MaximumSize = new Size(820, 0), Dock = DockStyle.Fill, Margin = new Padding(3, 0, 3, 16) });
         summary.AutoSize = true; summary.MaximumSize = new Size(820, 0); summary.Margin = new Padding(3, 0, 3, 12); summary.Dock = DockStyle.Fill; summary.Text = "正在检查环境…"; layout.Controls.Add(summary);
         details.Multiline = true; details.ReadOnly = true; details.ScrollBars = ScrollBars.Vertical; details.Dock = DockStyle.Fill;
         layout.Controls.Add(details);

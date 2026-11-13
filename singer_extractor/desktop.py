@@ -158,10 +158,13 @@ def main():
                     APP_NAME,
                     f"{APP_NAME}\nv{__version__}\n\n使用本机运行环境与独立桌面窗口。\n"
                     "研究模型可能有串音，导出前请试听。\n\n"
-                    "模型：Jocelyn Xu、Minje Kim 的 Singer-Informed Vocal Source Separation\n"
-                    "for Multi-Singer Music Mixtures（2026），FiLM / target-vocal loss only。\n"
-                    "论文：https://arxiv.org/abs/2608.14516\n"
-                    "作者代码：https://github.com/jocelynxu01/singer-separation-paper\n"
+                    "默认模型：Mel-Band RoFormer → UNMIXX\n"
+                    "RoFormer：https://github.com/KimberleyJensen/Mel-Band-Roformer-Vocal-Model\n"
+                    "权重：https://huggingface.co/KimberleyJSN/melbandroformer\n"
+                    "UNMIXX：https://github.com/jihoojung0106/unmixx\n"
+                    "论文：https://arxiv.org/abs/2601.12802\n"
+                    "旧版对照：Singer-informed FiLM，Jocelyn Xu、Minje Kim\n"
+                    "https://arxiv.org/abs/2608.14516\n"
                     "本程序是工程封装，不是原创模型或作者官方应用。\n\n"
                     "模型授权与应用 MIT License 分开；详见 THIRD_PARTY_NOTICES.md 与 LICENSES。",
                 )

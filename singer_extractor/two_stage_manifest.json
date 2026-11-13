@@ -1,0 +1,48 @@
+{
+  "downloads": [
+    {
+      "url": "https://codeload.github.com/jihoojung0106/unmixx/zip/8e750521b5942f4717656cac86a23cf0bd90dea5",
+      "file": "unmixx.zip",
+      "bytes": 6250812,
+      "sha256": "fa25d8ac140a692f84e932cc8b9256d040d6e8fdcb18af6157c6fd1c1a17d54d",
+      "prefix": "unmixx-8e750521b5942f4717656cac86a23cf0bd90dea5",
+      "members": {
+        "ckpt/best.ckpt": "unmixx/ckpt/best.ckpt",
+        "ckpt/conf.yml": "unmixx/ckpt/conf.yml",
+        "look2hear/models/unmixx_model.py": "unmixx/look2hear/models/unmixx_model.py",
+        "look2hear/models/layers/activations.py": "unmixx/look2hear/models/layers/activations.py",
+        "look2hear/models/layers/normalizations.py": "unmixx/look2hear/models/layers/normalizations.py"
+      }
+    },
+    {
+      "url": "https://codeload.github.com/KimberleyJensen/Mel-Band-Roformer-Vocal-Model/zip/25f44ffb55ee3c301281bba21b2d6d311cb69ae2",
+      "file": "roformer.zip",
+      "bytes": 13323,
+      "sha256": "dea5b08f6b172b96163bf80b9c37f4a4b8e40ea9678e05267d26b7e5cd0fd5b7",
+      "prefix": "Mel-Band-Roformer-Vocal-Model-25f44ffb55ee3c301281bba21b2d6d311cb69ae2",
+      "members": {
+        "models/mel_band_roformer/mel_band_roformer.py": "roformer/models/mel_band_roformer/mel_band_roformer.py",
+        "models/mel_band_roformer/attend.py": "roformer/models/mel_band_roformer/attend.py",
+        "configs/config_vocals_mel_band_roformer.yaml": "roformer/configs/config_vocals_mel_band_roformer.yaml"
+      }
+    },
+    {
+      "url": "https://huggingface.co/KimberleyJSN/melbandroformer/resolve/ac9b0614ab3cd7f77219e18ba494dfd93956c348/MelBandRoformer.ckpt",
+      "file": "MelBandRoformer.ckpt",
+      "bytes": 913106900,
+      "sha256": "87201f4d31afb5bc79993230fc49446918425574db48c01c405e44f365c7559e"
+    }
+  ],
+  "hf_revision": "ac9b0614ab3cd7f77219e18ba494dfd93956c348",
+  "hf_file": {
+    "rfilename": "MelBandRoformer.ckpt",
+    "blobId": "e9269937826d8cedf1855096bc9c1d49298bb4f8",
+    "size": 913106900,
+    "lfs": {
+      "sha256": "87201f4d31afb5bc79993230fc49446918425574db48c01c405e44f365c7559e",
+      "size": 913106900,
+      "pointerSize": 134
+    }
+  },
+  "pipeline": "Mel-Band RoFormer + UNMIXX"
+}

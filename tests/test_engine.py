@@ -38,7 +38,8 @@ def test_export_alignment_residual_and_private_paths(tmp_path):
         config = manifest()
         device = "cpu"
 
-        def extract(self, mixture, *_):
+        def extract(self, mixture, rate, reference, reference_rate, embedding_rate, progress):
+            assert embedding_rate == 44100
             return mixture * 0.25
 
     rate = 8000
@@ -58,6 +59,7 @@ def test_export_alignment_residual_and_private_paths(tmp_path):
     assert str(tmp_path) not in report_path.read_text(encoding="utf-8")
     assert path.name not in report_path.read_text(encoding="utf-8")
     assert json.loads(report_path.read_text(encoding="utf-8"))["quality_evaluated"] is False
+    assert report["embedding_sample_rate"] == 44100
 
 
 @pytest.fixture(scope="module")

@@ -39,22 +39,30 @@ class DesktopBackend:
 
         from .engine import Extractor
         from .server import build_app
+        from .two_stage import TwoStageExtractor
+        from .two_stage_assets import prepare_assets
         from .weights import download_weights, verify_weights
 
         models = self.directory / "models"
-        try:
-            verify_weights(models)
-        except ValueError:
-            if not download:
-                raise
-            self.report(0, "首次启动：正在从作者公开地址下载约 29 MB 模型…")
-            download_weights(models, self.report, quiet=True)
+        self.report(0, "首次使用需准备约 919 MB 双阶段模型；已下载的文件会校验复用。")
+        prepare_assets(models / "two-stage", self.report, download=download)
+
+        def legacy_factory(device):
+            try:
+                verify_weights(models)
+            except ValueError:
+                if not download:
+                    raise
+                download_weights(models, quiet=True)
+            return Extractor(model_dir=models, device=device)
+
         self.report(1, "模型已就绪，正在打开时间线…")
         self.app = build_app(
             self.directory / "cache",
             self.directory / "outputs",
-            functools.partial(Extractor, model_dir=models),
+            legacy_factory,
             model_dir=models,
+            two_stage_factory=functools.partial(TwoStageExtractor, model_dir=models / "two-stage"),
         )
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(("127.0.0.1", 0))
@@ -103,6 +111,6 @@ class DesktopBackend:
 
     def has_edits(self):
         return self.app and any(
-            project.revision or project.busy
+            project.revision or project.candidate_revision or project.busy
             for project in self.app.state.workspace.projects.values()
         )

@@ -8,7 +8,7 @@ from .weights import ROOT, download_weights
 def main():
     parser = argparse.ArgumentParser(description="Local target singer extraction (experimental)")
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("download-models", help="Download the two official checkpoints")
+    commands.add_parser("download-models", help="Prepare two-stage and legacy author models")
     ui = commands.add_parser("ui", help="Open the local timeline interface")
     ui.add_argument("--no-browser", action="store_true", help="Do not open a browser tab")
     ui.add_argument("--port", type=int, default=7860)
@@ -20,11 +20,14 @@ def main():
     extract.add_argument("--start", type=float, default=0)
     extract.add_argument("--duration", type=float)
     extract.add_argument("--device", choices=["auto", "cuda", "cpu"], default="auto")
-    extract.add_argument("--embedding-rate", type=int, choices=[16000, 44100], default=16000)
+    extract.add_argument("--embedding-rate", type=int, choices=[16000, 44100], default=44100)
     extract.add_argument("--output-dir", default=str(ROOT / "outputs"))
     args = parser.parse_args()
     try:
         if args.command == "download-models":
+            from .two_stage_assets import prepare_assets
+
+            prepare_assets(progress=lambda value, text: print(text, flush=True))
             download_weights()
         elif args.command == "ui":
             from .ui import launch

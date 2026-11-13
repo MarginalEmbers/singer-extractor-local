@@ -26,3 +26,5 @@ dist/
 .env
 .env.*
 !.env.example
+
+*.ckpt

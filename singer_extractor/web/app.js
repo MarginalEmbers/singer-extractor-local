@@ -1,4 +1,4 @@
-import { AudioTransport, clamp, formatTime, isCovered, selectionBetween, visibleWindow } from "./timeline.mjs?v=0.3.0";
+import { AudioTransport, clamp, formatTime, isCovered, selectionBetween, visibleWindow } from "./timeline.mjs?v=0.5.0";
 
 const $ = (id) => document.getElementById(id);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -45,6 +45,10 @@ function persist() {
   } catch { /* Storage may be disabled; audio processing still works. */ }
 }
 
+function coverageFor(track) {
+  if (!state.project) return [];
+  return track.startsWith("candidate") ? (state.project.candidate_range ? [state.project.candidate_range] : []) : state.project.coverage;
+}
 function duration() { return state.project?.duration || 1; }
 function view() { return visibleWindow(duration(), state.zoom, state.viewStart); }
 function referenceDuration() {
@@ -102,7 +106,7 @@ async function play() {
   pause();
   const loop = $("loop").checked;
   let end = loop ? state.end : duration();
-  if (state.monitor !== "original" && !state.project.complete) end = state.end;
+  if (state.monitor !== "original" && !isCovered(coverageFor(state.monitor), 0, duration(), 1 / state.project.sample_rate)) end = state.end;
   let begin = state.position;
   if (begin >= end || (loop && begin < state.start)) begin = state.start;
   state.position = begin;
@@ -120,7 +124,7 @@ async function hearReference() {
 
 async function monitor(track) {
   if (!state.project) return;
-  if (track !== "original" && !state.project.coverage.length) {
+  if (track !== "original" && !coverageFor(track).length) {
     status("目标音轨尚未处理，请先提取一个片段。"); return;
   }
   if (state.referencePlaying) pause();
@@ -161,7 +165,7 @@ function renderSelection() {
   $$(".selection-overlay").forEach((element) => apply(element, state.start, state.end));
   $$(".reference-overlay").forEach((element) => {
     apply(element, state.referenceStart, state.referenceStart + 3);
-    if (state.referenceSource !== "song") element.hidden = true;
+    if (state.referenceSource !== "song" || $("mode").value !== "legacy") element.hidden = true;
   });
   $("selection-readout").textContent = formatTime(state.start, true) + "–" + formatTime(state.end, true);
   $("selection-duration").textContent = (state.end - state.start).toFixed(2) + " 秒 · 只重做这段，其他结果保持不变";
@@ -182,12 +186,15 @@ function updateButtons() {
     "import-first", "import-next", "demo", "import-reference",
     "extract-selection", "extract-full", "mute",
   ].forEach((id) => { $(id).disabled = state.busy; });
+  const candidateCoverage = project?.candidate_range ? [project.candidate_range] : [];
+  $("choose-selection").disabled = disabled || !isCovered(candidateCoverage, state.start, state.end, 1 / (project?.sample_rate || 1));
+  $("choose-full").disabled = disabled || !isCovered(candidateCoverage, 0, duration(), 1 / (project?.sample_rate || 1));
   $("undo").disabled = disabled || !project.undo_available;
   $("export-selection").disabled = disabled || !isCovered(project.coverage, state.start, state.end, 1 / project.sample_rate);
   $("export-full").disabled = disabled || !project.complete;
-  ["reference-source", "reference-start", "reference-slider", "device", "embedding-rate"].forEach((id) => { $(id).disabled = disabled; });
+  ["reference-source", "reference-start", "reference-slider", "device", "embedding-rate", "mode", "candidate-number"].forEach((id) => { $(id).disabled = disabled; });
   $$("[data-monitor]").forEach((button) => {
-    button.disabled = !project || (button.dataset.monitor !== "original" && !project.coverage.length);
+    button.disabled = !project || (button.dataset.monitor !== "original" && !coverageFor(button.dataset.monitor).length);
   });
 }
 
@@ -216,15 +223,16 @@ function draw() {
   $$(".wave-wrap").forEach((element) => {
     const track = element.dataset.track;
     const { context: ctx, width, height } = canvasContext(element.querySelector("canvas"));
-    const peaks = state.project.waveforms[track];
+    const peaks = state.project.waveforms[track] || [];
+    const trackCoverage = coverageFor(track);
     if (track !== "original") {
       ctx.fillStyle = colors["--unprocessed"]; ctx.fillRect(0, 0, width, height);
-      for (const [begin, end] of state.project.coverage) {
+      for (const [begin, end] of trackCoverage) {
         const x1 = (begin - window.start) / window.span * width;
         const x2 = (end - window.start) / window.span * width;
         ctx.clearRect(x1, 0, x2 - x1, height);
       }
-      if (!state.project.coverage.length) {
+      if (!trackCoverage.length) {
         ctx.fillStyle = colors["--muted"]; ctx.font = "12px system-ui"; ctx.textAlign = "center";
         ctx.fillText("尚未处理", width / 2, height / 2 + 4); return;
       }
@@ -236,7 +244,7 @@ function draw() {
     for (let x = 0; x < width; x += 2) {
       const t0 = window.start + x / width * window.span;
       const t1 = window.start + (x + 2) / width * window.span;
-      if (track !== "original" && !state.project.coverage.some(([a, b]) => t1 >= a && t0 <= b)) continue;
+      if (track !== "original" && !trackCoverage.some(([a, b]) => t1 >= a && t0 <= b)) continue;
       const begin = clamp(Math.floor(t0 / duration() * peaks.length), 0, peaks.length - 1);
       const end = clamp(Math.ceil(t1 / duration() * peaks.length), begin + 1, peaks.length);
       let low = 0, high = 0;
@@ -261,6 +269,14 @@ function draw() {
 function render() {
   if (!state.project) return;
   const project = state.project, window = view();
+  const legacy = $("mode").value === "legacy";
+  $("legacy-reference").hidden = !legacy; $("legacy-rate").hidden = !legacy;
+  $("two-stage-hint").hidden = legacy; $("reference-legend").hidden = !legacy;
+  $("tool").querySelector('[value="reference"]').hidden = !legacy;
+  if (!legacy && $("tool").value === "reference") $("tool").value = "selection";
+  $("candidate-controls").hidden = !project.candidate_range;
+  $$(".candidate-row").forEach((row) => { row.hidden = !project.candidate_range; });
+  if (project.candidate_range) $("candidate-scope").textContent = "本次候选范围：" + project.candidate_range.map((t) => formatTime(t, true)).join("–");
   $("empty").hidden = true; $("workspace").hidden = false;
   $("song-name").textContent = project.name;
   $("song-meta").textContent = formatTime(project.duration, true) + " · " + project.sample_rate.toLocaleString() + " Hz · 输出单声道";
@@ -280,7 +296,7 @@ function render() {
     ? project.reference.name : "选只有 A 演唱的片段，尽量避免 B 和明显干扰。";
   $$("[data-monitor]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.monitor === state.monitor)));
   $$(".wave-wrap").forEach((element) => element.classList.toggle("listening", element.dataset.track === state.monitor));
-  $("monitor-label").textContent = "正在试听：" + { original: "原曲", target: "目标 A", residual: "残差" }[state.monitor];
+  $("monitor-label").textContent = "正在试听：" + { original: "原曲", target: "目标轨", residual: "残差", candidate1: "候选 1", candidate2: "候选 2" }[state.monitor];
   renderSelection(); draw(); updateVolume();
 }
 
@@ -295,6 +311,7 @@ async function installProject(project, fresh = false) {
   const previousId = state.project?.id;
   const nextBuffers = { ...state.buffers };
   const tasks = ["target", "residual"];
+  if (project.candidate_range) tasks.push("candidate1", "candidate2");
   if (fresh || previousId !== project.id || !nextBuffers.original) tasks.push("original");
   if (project.reference) tasks.push("reference");
   await Promise.all(tasks.map(async (name) => { nextBuffers[name] = await loadAudio(project.audio[name]); }));
@@ -306,7 +323,7 @@ async function installProject(project, fresh = false) {
     state.monitor = "original"; state.zoom = 1; state.viewStart = 0; $("zoom").value = 1;
     $("downloads").replaceChildren();
   }
-  if (!project.coverage.length) state.monitor = "original";
+  if (state.monitor !== "original" && !coverageFor(state.monitor).length) state.monitor = "original";
   render(); persist();
 }
 
@@ -325,7 +342,7 @@ async function importSong(file) {
     const form = new FormData(); form.append("file", file);
     const project = await api("/api/projects", { method: "POST", body: form });
     await installProject(project, true);
-    status("先找到 A 独唱的片段，切换“参考 3 秒”工具后在波形上选取。");
+    status("先分离一个片段或整首；试听候选 1 / 2，再将想保留的声音写入目标轨。");
   });
 }
 
@@ -334,7 +351,7 @@ async function extract(whole) {
     pause();
     const job = await api("/api/projects/" + state.project.id + "/extract", {
       method: "POST", body: {
-        start: state.start, end: state.end, whole,
+        start: state.start, end: state.end, whole, mode: $("mode").value,
         reference_start: state.referenceStart, reference_source: state.referenceSource,
         device: $("device").value, embedding_rate: Number($("embedding-rate").value),
       },
@@ -358,9 +375,11 @@ async function watchJob(job) {
     const project = await api("/api/projects/" + job.project_id);
     await installProject(project);
     if (current.status === "completed") {
-      state.monitor = "target"; state.position = current.start;
+      const dual = $("mode").value === "two-stage";
+      state.monitor = dual ? "candidate1" : "target"; state.position = current.start;
+      if (dual) { state.start = current.start; state.end = current.end; }
       $("job-progress").value = 1;
-      status("处理完成。切换原曲 / 目标 A 试听；灰色区域仍未处理。");
+      status(dual ? "已生成候选 1 / 2。试听确认后，在右侧选择声音并写入目标轨；尚未自动选入。" : "参考提取完成，请试听目标轨。");
       render(); persist();
     } else if (current.status === "failed") throw new Error(current.message);
     else status(current.message);
@@ -376,7 +395,7 @@ async function exportAudio(whole) {
       method: "POST", body: { start: state.start, end: state.end, whole },
     });
     $("downloads").replaceChildren();
-    const labels = { "stems.zip": "打包下载", "target.wav": "目标 A", "residual.wav": "残差", "report.json": "处理记录" };
+    const labels = { "stems.zip": "打包下载", "target.wav": "目标轨", "residual.wav": "残差", "report.json": "处理记录" };
     for (const name of ["stems.zip", "target.wav", "residual.wav", "report.json"]) {
       const link = document.createElement("a");
       link.href = result.files[name]; link.download = name; link.textContent = labels[name];
@@ -385,6 +404,19 @@ async function exportAudio(whole) {
     status("已导出 " + formatTime(result.duration, true) + "；文件也保存在项目 outputs 文件夹中。");
   });
 }
+
+async function chooseCandidate(whole) {
+  await operation(async () => {
+    const project = await api("/api/projects/" + state.project.id + "/choose", {
+      method: "POST", body: { candidate: Number($("candidate-number").value), start: state.start, end: state.end, whole },
+    });
+    await installProject(project); state.monitor = "target"; render(); persist();
+    status("已写入目标轨，可以试听、撤销或导出。发现换人时可框选该段，改选另一候选。");
+  });
+}
+$("choose-selection").onclick = () => chooseCandidate(false);
+$("choose-full").onclick = () => chooseCandidate(true);
+$("mode").onchange = () => { if (state.referencePlaying) pause(); render(); };
 
 function catchAsync(action) {
   return (...args) => Promise.resolve(action(...args)).catch((error) => status(error.message, true));
@@ -538,7 +570,7 @@ async function init() {
       if (Number.isFinite(saved.start) && Number.isFinite(saved.end)) [state.start, state.end] = selectionBetween(saved.start, saved.end, duration(), 1 / project.sample_rate);
       state.referenceSource = saved.referenceSource === "reference" && project.reference ? "reference" : "song";
       state.referenceStart = clamp(Number(saved.referenceStart) || 0, 0, referenceDuration() - 3);
-      if (["original", "target", "residual"].includes(saved.monitor) && project.coverage.length) state.monitor = saved.monitor;
+      if (["original", "target", "residual", "candidate1", "candidate2"].includes(saved.monitor) && (saved.monitor === "original" || coverageFor(saved.monitor).length)) state.monitor = saved.monitor;
       render(); persist();
       if (project.busy) await operation(async () => watchJob(await api("/api/jobs/" + project.busy)));
     } catch { try { localStorage.removeItem("singer-timeline-v2"); } catch { /* No storage. */ } }

@@ -1,3 +1,3 @@
 """Local target-singer extraction. Research prototype, not a quality guarantee."""
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

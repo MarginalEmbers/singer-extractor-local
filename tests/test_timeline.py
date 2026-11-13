@@ -55,6 +55,7 @@ def finish(space, job):
 
 def options(**overrides):
     return {
+        "mode": "legacy",
         "start": 1,
         "end": 4,
         "whole": False,
@@ -181,7 +182,8 @@ def client(tmp_path):
         yield result
 
 
-def test_http_upload_extract_edit_export_workflow(client):
+@pytest.mark.parametrize("embedding_rate", [None, 16000])
+def test_http_upload_extract_edit_export_workflow(client, embedding_rate):
     response = client.post(
         "/api/projects", files={"file": ("中文 路径.wav", wav_bytes(), "audio/wav")}
     )
@@ -190,8 +192,22 @@ def test_http_upload_extract_edit_export_workflow(client):
     prefix = "/api/projects/" + project["id"]
     assert project["name"] == "中文 路径.wav" and not project["complete"]
     assert client.post(prefix + "/export", json={"whole": True}).status_code == 400
-    job = client.post(prefix + "/extract", json=options(whole=True)).json()
+    request = options(whole=True)
+    if embedding_rate is None:
+        request.pop("embedding_rate")
+    else:
+        request["embedding_rate"] = embedding_rate
+    received_rates = []
+
+    class RecordingExtractor(FakeExtractor):
+        def extract(self, audio, rate, reference, ref_rate, embedding_rate, progress):
+            received_rates.append(embedding_rate)
+            return super().extract(audio, rate, reference, ref_rate, embedding_rate, progress)
+
+    client.app.state.workspace.extractor_factory = RecordingExtractor
+    job = client.post(prefix + "/extract", json=request).json()
     assert finish(client.app.state.workspace, job)["status"] == "completed"
+    assert received_rates == [44100 if embedding_rate is None else embedding_rate]
     project = client.get(prefix).json()
     assert project["complete"]
     response = client.get(project["audio"]["target"])
@@ -222,7 +238,12 @@ def test_http_local_origin_validation_and_upload_errors(client):
     assert demo["demo"] and not demo["complete"]
     prefix = "/api/projects/" + demo["id"]
     assert client.post(prefix + "/extract", json={"device": "imaginary"}).status_code == 422
-    assert client.post(prefix + "/extract", json={"reference_start": 100}).status_code == 400
+    assert (
+        client.post(
+            prefix + "/extract", json={"reference_start": 100, "mode": "legacy"}
+        ).status_code
+        == 400
+    )
     assert client.get("/").headers["content-security-policy"].startswith("default-src 'self'")
     assert client.get("/assets/app.js").status_code == 200
     assert "javascript" in client.get("/assets/timeline.mjs").headers["content-type"]

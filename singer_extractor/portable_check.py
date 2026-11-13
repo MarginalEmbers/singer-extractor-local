@@ -59,13 +59,16 @@ def diagnose_bundle(directory, report_path, download=False):
                 "device": "cuda" if torch.cuda.is_available() else "cpu",
             },
         )
-        deadline = time.monotonic() + 120
+        deadline = time.monotonic() + 300
         while job["status"] in {"queued", "running"}:
             if time.monotonic() > deadline:
                 raise TimeoutError("Frozen inference took too long")
             time.sleep(0.1)
             job = call("/api/jobs/" + job["id"])
         assert job["status"] == "completed", job
+        candidates = call(prefix)
+        assert candidates["candidate_range"] and not candidates["complete"]
+        call(prefix + "/choose", {"whole": True, "candidate": 1})
         exported = call(prefix + "/export", {"whole": True})
         archive = session.get(url + exported["files"]["stems.zip"], timeout=60)
         archive.raise_for_status()
@@ -76,6 +79,8 @@ def diagnose_bundle(directory, report_path, download=False):
         original = session.get(url + project["audio"]["original"], timeout=60)
         original.raise_for_status()
         source, _ = sf.read(io.BytesIO(original.content))
+        if source.ndim == 2:
+            source = source.mean(axis=1)
         assert len(target) == project["samples"] and rate == project["sample_rate"]
         assert np.isfinite(target).all()
         error = float(np.abs(target + residual - source).max())

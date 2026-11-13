@@ -16,6 +16,8 @@ import soundfile as sf
 from . import __version__
 from .audio import read_audio
 from .engine import Extractor
+from .two_stage import TwoStageExtractor
+from .two_stage_assets import model_manifest
 from .weights import manifest
 
 MAX_SECONDS = 3600
@@ -64,6 +66,11 @@ class Project:
     audio: np.ndarray
     rate: int
     demo: bool = False
+    stereo: np.ndarray | None = None
+    candidates: np.ndarray | None = None
+    candidate_range: tuple | None = None
+    candidate_revision: int = 0
+    candidate_report: dict = field(default_factory=dict)
     target: np.ndarray = field(init=False)
     coverage: list = field(default_factory=list)
     history: list = field(default_factory=list)
@@ -79,7 +86,9 @@ class Project:
     def __post_init__(self):
         self.target = np.zeros_like(self.audio)
         self.envelopes["original"] = waveform(self.audio)
-        sf.write(self.directory / "original.wav", self.audio, self.rate, subtype="FLOAT")
+        if self.stereo is None:
+            self.stereo = self.audio[:, None]
+        sf.write(self.directory / "original.wav", self.stereo, self.rate, subtype="FLOAT")
         self.refresh_media()
 
     def refresh_media(self):
@@ -111,12 +120,18 @@ class Project:
                 "coverage": [[a / self.rate, b / self.rate] for a, b in self.coverage],
                 "complete": covered(self.coverage, 0, len(self.audio)),
                 "undo_available": bool(self.history),
+                "candidate_range": None
+                if self.candidate_range is None
+                else [v / self.rate for v in self.candidate_range],
+                "candidate_revision": self.candidate_revision,
                 "waveforms": self.envelopes,
                 "playback_peak": max(
                     1.0,
                     float(np.abs(self.audio).max()),
                     float(np.abs(self.target).max()),
                     float(np.abs(self.audio - self.target).max()),
+                    float(np.abs(self.stereo).max()),
+                    0 if self.candidates is None else float(np.abs(self.candidates).max()),
                 ),
                 "reference": None
                 if self.reference is None
@@ -130,8 +145,57 @@ class Project:
                     "target": f"/api/projects/{self.id}/audio/target?revision={self.revision}",
                     "residual": f"/api/projects/{self.id}/audio/residual?revision={self.revision}",
                     "reference": f"/api/projects/{self.id}/audio/reference?revision={self.revision}",
+                    **(
+                        {
+                            f"candidate{i}": f"/api/projects/{self.id}/audio/candidate{i}?revision={self.candidate_revision}"
+                            for i in (1, 2)
+                        }
+                        if self.candidates is not None
+                        else {}
+                    ),
                 },
             }
+
+    def store_candidates(self, begin, end, values, report):
+        if values.shape != (2, end - begin) or not np.isfinite(values).all():
+            raise ValueError("模型输出长度或数值无效，没有修改结果。")
+        self.candidates = np.zeros((2, len(self.audio)), np.float32)
+        self.candidates[:, begin:end] = values
+        self.candidate_range = (begin, end)
+        self.candidate_report = report
+        self.candidate_revision += 1
+        for i in (1, 2):
+            sf.write(
+                self.directory / f"candidate{i}-{self.candidate_revision}.wav",
+                self.candidates[i - 1],
+                self.rate,
+                subtype="FLOAT",
+            )
+            self.envelopes[f"candidate{i}"] = waveform(self.candidates[i - 1])
+
+    def choose_candidate(self, number, start, end, whole):
+        with self.lock:
+            self.require_idle()
+            if number not in (1, 2) or self.candidate_range is None:
+                raise ValueError("请先完成双轨分离，再选择候选人声。")
+            begin, finish = (
+                (0, len(self.audio))
+                if whole
+                else sample_range(start, end, self.rate, len(self.audio))
+            )
+            if not covered([self.candidate_range], begin, finish):
+                raise ValueError("选择范围超出本次候选音轨的处理范围。")
+            self.replace(
+                begin,
+                finish,
+                self.candidates[number - 1, begin:finish],
+                {
+                    "action": "choose_candidate",
+                    "candidate": number,
+                    "candidate_revision": self.candidate_revision,
+                    **self.candidate_report,
+                },
+            )
 
     def replace(self, begin, end, values, action):
         if values.shape != (end - begin,) or not np.isfinite(values).all():
@@ -182,12 +246,19 @@ class Project:
 
 
 class Workspace:
-    def __init__(self, cache_dir, output_dir, extractor_factory=Extractor):
+    def __init__(
+        self,
+        cache_dir,
+        output_dir,
+        extractor_factory=Extractor,
+        two_stage_factory=TwoStageExtractor,
+    ):
         self.cache_dir, self.output_dir = Path(cache_dir), Path(output_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.projects, self.jobs, self.exports = {}, {}, {}
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="singer-inference")
         self.extractor_factory = extractor_factory
+        self.two_stage_factory = two_stage_factory
         self.engine = None
         self.engine_device = None
         self.lock = threading.RLock()
@@ -199,7 +270,8 @@ class Workspace:
             return self.projects[project_id]
 
     def add(self, path, name, demo=False):
-        audio, rate = read_audio(path)
+        stereo, rate = read_audio(path, mono=False)
+        audio = stereo.mean(axis=1)
         if len(audio) < 3 * rate:
             raise ValueError("歌曲至少需要 3 秒，才能选择歌手参考。")
         if len(audio) / rate > MAX_SECONDS:
@@ -213,7 +285,7 @@ class Workspace:
             key = uuid.uuid4().hex
             directory = self.cache_dir / key
             directory.mkdir()
-            project = Project(key, directory, name, audio, rate, demo=demo)
+            project = Project(key, directory, name, audio, rate, demo=demo, stereo=stereo)
             self.projects[key] = project
             return project
 
@@ -238,16 +310,20 @@ class Workspace:
             start = 0.0 if options["whole"] else options["start"]
             end = len(project.audio) / project.rate if options["whole"] else options["end"]
             begin, finish = sample_range(start, end, project.rate, len(project.audio))
-            use_external = options["reference_source"] == "reference"
-            if use_external and project.reference is None:
-                raise ValueError("请先导入单独的参考音频。")
-            reference = project.reference if use_external else project.audio
-            ref_rate = project.reference_rate if use_external else project.rate
-            ref_start = options["reference_start"]
-            ref_begin, ref_end = sample_range(ref_start, ref_start + 3, ref_rate, len(reference))
-            reference = reference[ref_begin:ref_end].copy()
-            if float(np.abs(reference).max()) < 1e-6:
-                raise ValueError("这 3 秒接近静音，请重新选择目标歌手参考。")
+            reference, ref_rate = None, 0
+            if options.get("mode", "two-stage") == "legacy":
+                use_external = options["reference_source"] == "reference"
+                if use_external and project.reference is None:
+                    raise ValueError("请先导入单独的参考音频。")
+                reference = project.reference if use_external else project.audio
+                ref_rate = project.reference_rate if use_external else project.rate
+                ref_start = options["reference_start"]
+                ref_begin, ref_end = sample_range(
+                    ref_start, ref_start + 3, ref_rate, len(reference)
+                )
+                reference = reference[ref_begin:ref_end].copy()
+                if float(np.abs(reference).max()) < 1e-6:
+                    raise ValueError("这 3 秒接近静音，请重新选择目标歌手参考。")
             job_id = uuid.uuid4().hex
             job = {
                 "id": job_id,
@@ -270,14 +346,39 @@ class Workspace:
             job.update(status="running", message="正在加载模型")
             if job["cancelled"]:
                 raise InterruptedError
-            if self.engine is None or self.engine_device != options["device"]:
-                self.engine = self.extractor_factory(device=options["device"])
-                self.engine_device = options["device"]
 
             def progress(value, message):
                 if job["cancelled"]:
                     raise InterruptedError
                 job.update(progress=float(value), message=message)
+
+            if options.get("mode", "two-stage") == "two-stage":
+                self.engine = None
+                engine = self.two_stage_factory(device=options["device"])
+                result, report = engine.extract(project.stereo[begin:end], project.rate, progress)
+                with project.lock:
+                    if job["cancelled"]:
+                        raise InterruptedError
+                    project.store_candidates(
+                        begin,
+                        end,
+                        result,
+                        {
+                            **report,
+                            "device": engine.device,
+                            "elapsed_seconds": round(time.perf_counter() - began, 3),
+                        },
+                    )
+                job.update(
+                    status="completed",
+                    progress=1.0,
+                    message="双轨分离完成，请试听候选 1 / 2 后选择保留",
+                )
+                return
+
+            if self.engine is None or self.engine_device != options["device"]:
+                self.engine = self.extractor_factory(device=options["device"])
+                self.engine_device = options["device"]
 
             result = self.engine.extract(
                 project.audio[begin:end],
@@ -346,7 +447,7 @@ class Workspace:
             config = manifest()
             report = {
                 "version": __version__,
-                "model": config["variant"],
+                "model": "See edits: two-stage candidates and/or legacy FiLM",
                 "sample_rate": project.rate,
                 "channels": 1,
                 "samples": finish - begin,
@@ -359,6 +460,8 @@ class Workspace:
                 "edits": project.edits.copy(),
                 "boundary_fade_seconds": 0.005,
                 "model_hashes": {item["name"]: item["sha256"] for item in config["files"]},
+                "two_stage_model_sources": model_manifest(),
+                "candidate_identity_verified": False,
                 "note": "残差包含伴奏、其他歌手与分离误差；单声道浮点 WAV，不做自动响度归一化。",
             }
             (directory / "report.json").write_text(

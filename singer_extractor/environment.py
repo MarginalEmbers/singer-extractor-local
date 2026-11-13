@@ -86,6 +86,11 @@ def diagnose(data_dir, lock):
             "PySide6.QtWidgets",
             "PySide6.QtWebEngineWidgets",
             "torch",
+            "yaml",
+            "einops",
+            "librosa.filters",
+            "rotary_embedding_torch",
+            "beartype",
         ):
             importlib.import_module(module)
         import torch
@@ -119,14 +124,14 @@ def diagnose(data_dir, lock):
             str(exc),
             "更新 NVIDIA 驱动并重启；运行库错误可修复，也可用 CPU 继续。",
         )
-    from .weights import verify_weights
+    from .two_stage_assets import verify_assets
 
     try:
-        verify_weights(directory / "models")
+        verify_assets(directory / "models/two-stage")
         report["models_ok"] = True
         add("模型文件", True, "作者模型 SHA-256 校验通过")
     except ValueError as exc:
-        add("模型文件", False, str(exc), "进入软件后自动下载或重新下载约 29 MB 模型，请保持联网。")
+        add("模型文件", False, str(exc), "进入软件后自动准备约 919 MB 双阶段模型，请保持联网。")
     return report
 
 

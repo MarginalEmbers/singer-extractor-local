@@ -1,6 +1,6 @@
 # Windows desktop build
 
-## v0.4 online package
+## v0.5 online package
 
 Build on Windows with Python 3.11, PySide6 (to generate the icon), and official
 [uv 0.12.7](https://github.com/astral-sh/uv/releases/tag/0.12.7).
@@ -38,7 +38,7 @@ The check imports Qt, audio and Torch libraries and actually executes CUDA FFT
 and a cuDNN LSTM. Model absence is actionable but does not block opening the app
 for its automatic model download. Errors and installation steps are in `data/logs`.
 
-First installation needs about 3–4 GB of downloads, plus model files. The 12 GiB
+First installation needs about 3–4 GB of downloads, plus about 919 MB of model downloads. The 12 GiB
 free-space guard includes installation/cache headroom and is not a promise about
 total song storage. Retries reuse verified package caches where available. Repair
 reinstalls pinned packages, preserving user audio and exports.

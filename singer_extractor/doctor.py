@@ -3,6 +3,7 @@ import platform
 import torch
 
 from .weights import ROOT, verify_weights
+from .two_stage_assets import verify_assets
 
 
 def diagnose():
@@ -26,4 +27,9 @@ def diagnose():
         result["weights"] = "verified"
     except ValueError as exc:
         result["weights"] = str(exc)
+    try:
+        verify_assets(ROOT / "models/two-stage")
+        result["two_stage_weights"] = "verified"
+    except ValueError as exc:
+        result["two_stage_weights"] = str(exc)
     return result

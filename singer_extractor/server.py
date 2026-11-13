@@ -15,7 +15,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from . import __version__
 from .engine import Extractor
-from .weights import ROOT, verify_weights
+from .two_stage import TwoStageExtractor
+from .two_stage_assets import verify_assets
+from .weights import ROOT
 from .workspace import Workspace
 
 WEB = Path(__file__).parent / "web"
@@ -30,15 +32,20 @@ class Bounds(BaseModel):
 
 
 class ExtractRequest(Bounds):
+    mode: Literal["two-stage", "legacy"] = "two-stage"
     whole: bool = False
     reference_start: float = Field(default=0, ge=0)
     reference_source: Literal["song", "reference"] = "song"
-    embedding_rate: Literal[16000, 44100] = 16000
+    embedding_rate: Literal[16000, 44100] = 44100
     device: Literal["auto", "cuda", "cpu"] = "auto"
 
 
 class ExportRequest(Bounds):
     whole: bool = False
+
+
+class ChooseRequest(ExportRequest):
+    candidate: Literal[1, 2]
 
 
 def save_upload(file, directory):
@@ -64,7 +71,13 @@ def save_upload(file, directory):
         raise
 
 
-def build_app(cache_dir=None, output_dir=None, extractor_factory=Extractor, model_dir=None):
+def build_app(
+    cache_dir=None,
+    output_dir=None,
+    extractor_factory=Extractor,
+    model_dir=None,
+    two_stage_factory=TwoStageExtractor,
+):
     # Windows registry MIME mappings can otherwise serve ES modules as text/plain.
     mimetypes.add_type("application/javascript", ".mjs")
     mimetypes.add_type("application/javascript", ".js")
@@ -72,6 +85,7 @@ def build_app(cache_dir=None, output_dir=None, extractor_factory=Extractor, mode
         cache_dir or ROOT / ".cache" / "workspaces-v2",
         output_dir or ROOT / "outputs",
         extractor_factory,
+        two_stage_factory,
     )
 
     @asynccontextmanager
@@ -132,7 +146,7 @@ def build_app(cache_dir=None, output_dir=None, extractor_factory=Extractor, mode
     @app.get("/api/health")
     def health():
         try:
-            verify_weights(model_dir or ROOT / "models")
+            verify_assets(Path(model_dir or ROOT / "models") / "two-stage")
             weights = "ready"
         except ValueError as exc:
             weights = str(exc)
@@ -187,6 +201,11 @@ def build_app(cache_dir=None, output_dir=None, extractor_factory=Extractor, mode
                 if track == "reference" and project.reference is None:
                     raise HTTPException(404, "没有单独的参考音频。")
                 path = project.directory / f"{track}.wav"
+            elif track in ("candidate1", "candidate2"):
+                version = project.candidate_revision if revision is None else revision
+                if project.candidates is None or not 1 <= version <= project.candidate_revision:
+                    raise HTTPException(404, "找不到这个候选音轨版本。")
+                path = project.directory / f"{track}-{version}.wav"
             elif track in ("target", "residual"):
                 version = project.revision if revision is None else revision
                 if not 0 <= version <= project.revision:
@@ -214,6 +233,12 @@ def build_app(cache_dir=None, output_dir=None, extractor_factory=Extractor, mode
     def mute(project_id: str, bounds: Bounds):
         project = workspace.project(project_id)
         project.mute(bounds.start, bounds.end)
+        return project.snapshot()
+
+    @app.post("/api/projects/{project_id}/choose")
+    def choose(project_id: str, options: ChooseRequest):
+        project = workspace.project(project_id)
+        project.choose_candidate(options.candidate, options.start, options.end, options.whole)
         return project.snapshot()
 
     @app.post("/api/projects/{project_id}/undo")

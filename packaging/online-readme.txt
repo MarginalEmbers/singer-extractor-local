@@ -1,7 +1,7 @@
-哦，金金的音道分离 · v0.4.0 Windows 在线安装版
+哦，金金的音道分离 · v0.5.0 Windows 在线安装版
 
 这个小包没有内置 Python、PyTorch 和 CUDA 运行库。
-第一次需要下载约 3–4 GB 环境，再准备约 29 MB 模型；并不是几 MB 就能离线运行。
+第一次需要下载约 3–4 GB 环境，再准备约 919 MB 双阶段模型；并不是几 MB 就能离线运行。
 安装和缓存请预留至少 12 GiB 空间，处理歌曲还需要额外空间。
 
 1. 完整解压到可写文件夹，不要只取 EXE 或直接在压缩包内运行。
@@ -23,22 +23,33 @@
   也可明确选择“使用 CPU 继续”，运行速度会较慢；不会冒充 GPU 模式。
 - 模型缺失或损坏：主窗口会自动从作者公开链接下载并校验，可在失败后重试。
 - 网络失败：日志区会指出卡在 Python、PyTorch 还是 PyPI 依赖安装。
-  请保证 GitHub/Astral、download.pytorch.org、pypi.org 以及作者模型链接可访问。
+  请保证 GitHub/Astral、download.pytorch.org、pypi.org 、huggingface.co 以及作者模型链接可访问。
 - 空间不足或没有写入权限：腾出空间，或解压到可写目录后重试。
 - 安装失败可以重试；修复可能重新下载依赖，不删除歌曲或已导出的文件。
 - 安装期间请勿移动软件或环境目录。该软件未作商业代码签名。
 
-使用：导入歌曲 → 选 A 独唱的 3 秒 → 框选片段预览 → 处理整首 → 导出。
+使用：导入歌曲 → 分离选区或整首 → 试听候选 1 / 2 → 选择候选写入目标轨 → 试听并导出。
+局部换人时框选该段，可改选另一候选；新分离不会自动覆盖目标轨。
+候选轨仅保留最近一次分离。旧版 3 秒参考模式仍可在“分离方式”中选择。
 保留原有同步试听、外部参考、缩放/平移、局部重做、静音、撤销和 WAV/ZIP 导出。
 data/models：模型；data/outputs：导出；data/cache：试听缓存；data/logs：日志。
 旧版数据可在关闭软件后，把旧软件的 data 文件夹复制到本版旁边（先备份，避免覆盖新结果）。
 编辑历史只在本次运行期间保留；退出前请导出。
 
 验证范围：开发机 RTX 5080；RTX 5090 仍需接收方实机验收。
-研究模型存在串音和失真风险，没有真实歌曲试听结论。
+单首双人歌曲获得“进步非常明显”的用户反馈，不能推广到所有歌曲。
+候选编号不代表固定歌手，可能串音或换人，需要逐段试听。
+双轨模型原生输出 24 kHz 单声道，恢复原采样率不会增加高频细节。
 
 代码：https://github.com/MarginalEmbers/singer-extractor-local
-模型引用：Jocelyn Xu、Minje Kim（2026），Singer-Informed Vocal Source Separation for Multi-Singer Music Mixtures。
+默认模型：Mel-Band RoFormer + UNMIXX
+RoFormer：https://github.com/KimberleyJensen/Mel-Band-Roformer-Vocal-Model
+权重：https://huggingface.co/KimberleyJSN/melbandroformer
+UNMIXX：https://github.com/jihoojung0106/unmixx
+UNMIXX 论文：https://arxiv.org/abs/2601.12802
+固定版本和 SHA-256：app/singer_extractor/two_stage_manifest.json
+
+旧版对照模型引用：Jocelyn Xu、Minje Kim（2026），Singer-Informed Vocal Source Separation for Multi-Singer Music Mixtures。
 论文：https://arxiv.org/abs/2608.14516
 作者代码和权重链接：https://github.com/jocelynxu01/singer-separation-paper
 变体：FiLM / target-vocal loss only + clean singer embedding。

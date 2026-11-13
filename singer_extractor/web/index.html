@@ -6,19 +6,19 @@
   <meta name="color-scheme" content="light dark">
   <title>哦，金金的音道分离 · 时间线工作台</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/assets/style.css?v=0.3.0">
-  <script type="module" src="/assets/app.js?v=0.3.0"></script>
+  <link rel="stylesheet" href="/assets/style.css?v=0.5.0">
+  <script type="module" src="/assets/app.js?v=0.5.0"></script>
 </head>
 <body>
   <header class="app-header">
     <div class="brand"><span class="brand-symbol" aria-hidden="true">≋</span><span>哦，金金的音道分离 <small>时间线工作台</small></span></div>
-    <div class="header-actions"><span id="health" class="pill">检查环境…</span><span class="version">v0.4.0 · 本地运行</span></div>
+    <div class="header-actions"><span id="health" class="pill">检查环境…</span><span class="version">v0.5.0 · 本地运行</span></div>
   </header>
   <main id="drop-zone">
     <section id="empty" class="empty">
-      <span class="eyebrow">从一段参考，找到那位歌手</span>
+      <span class="eyebrow">先分开两条人声，再选择要留下的声音</span>
       <h1>把歌曲放到时间线上。</h1>
-      <p>框选目标歌手独唱的 3 秒，先试听一个片段，再处理整首。</p>
+      <p>导入双人歌曲，分离候选人声 1 / 2，试听后选入目标轨。无需先找独唱参考。</p>
       <button class="primary large" id="import-first">选择歌曲</button>
       <p class="muted small">也可以拖入 WAV、FLAC、MP3、OGG 文件 · 音频留在本机</p>
       <button class="link-button" id="demo">没有歌曲？载入功能自检音频</button>
@@ -47,8 +47,16 @@
             <div class="track-label"><span>原曲</span><small>A＋B＋伴奏</small><button class="solo" data-monitor="original" aria-pressed="true" aria-label="试听原曲">试听</button></div>
             <div class="wave-wrap" data-track="original" id="source-wave"><canvas class="wave" aria-label="原曲波形，拖动框选，点击定位"></canvas><div class="selection-overlay"></div><div class="reference-overlay"></div><div class="playhead"></div></div>
           </div>
+          <div class="track-row candidate-row" hidden>
+            <div class="track-label"><span>候选 1</span><small>试听确认歌手</small><button class="solo" data-monitor="candidate1" aria-pressed="false" aria-label="试听候选 1">试听</button></div>
+            <div class="wave-wrap" data-track="candidate1"><canvas class="wave" aria-label="候选 1 人声波形"></canvas><div class="selection-overlay"></div><div class="playhead"></div></div>
+          </div>
+          <div class="track-row candidate-row" hidden>
+            <div class="track-label"><span>候选 2</span><small>试听确认歌手</small><button class="solo" data-monitor="candidate2" aria-pressed="false" aria-label="试听候选 2">试听</button></div>
+            <div class="wave-wrap" data-track="candidate2"><canvas class="wave" aria-label="候选 2 人声波形"></canvas><div class="selection-overlay"></div><div class="playhead"></div></div>
+          </div>
           <div class="track-row">
-            <div class="track-label"><span>目标 A</span><small id="target-state">尚未处理</small><button class="solo" data-monitor="target" aria-pressed="false" aria-label="试听目标 A">试听</button></div>
+            <div class="track-label"><span>目标轨</span><small id="target-state">尚未处理</small><button class="solo" data-monitor="target" aria-pressed="false" aria-label="试听目标轨">试听</button></div>
             <div class="wave-wrap" data-track="target"><canvas class="wave" aria-label="目标歌手结果波形，灰色区域尚未处理"></canvas><div class="selection-overlay"></div><div class="playhead"></div></div>
           </div>
           <div class="track-row">
@@ -56,7 +64,7 @@
             <div class="wave-wrap" data-track="residual"><canvas class="wave" aria-label="残差音轨波形"></canvas><div class="selection-overlay"></div><div class="playhead"></div></div>
           </div>
           <div class="pan-row"><label for="pan">平移</label><input id="pan" type="range" min="0" max="0" step="0.01" value="0" aria-label="平移时间线"><span id="view-range" class="small numeric"></span></div>
-          <div class="legend"><span><i class="swatch reference"></i>3 秒参考</span><span><i class="swatch selected"></i>预览选区</span><span><i class="swatch unprocessed"></i>尚未处理</span></div>
+          <div class="legend"><span id="reference-legend" hidden><i class="swatch reference"></i>3 秒参考</span><span><i class="swatch selected"></i>预览选区</span><span><i class="swatch unprocessed"></i>尚未处理</span></div>
           <div class="transport">
             <button id="play" class="primary" aria-pressed="false">播放</button>
             <span id="clock" class="clock numeric">00:00.0</span><span class="muted">/ <span id="total-time" class="numeric">00:00</span></span>
@@ -65,15 +73,19 @@
           </div>
           <label class="seek-label" for="seek"><span id="monitor-label">正在试听：原曲</span><span>切换音轨，保持播放位置</span></label>
           <input id="seek" type="range" min="0" max="1" step="0.01" value="0" aria-label="播放位置，秒">
-          <div class="edit-bar"><button id="mute">选区只有 B → 静音</button><button id="undo" disabled>撤销上一步</button><span class="muted small">静音和重做只修改选区；边缘做短淡化。</span></div>
+          <div class="edit-bar"><button id="mute">目标轨选区静音</button><button id="undo" disabled>撤销上一步</button><span class="muted small">静音和重做只修改选区；边缘做短淡化。</span></div>
           <div class="job-panel">
-            <div class="job-title"><span id="status" role="status" aria-live="polite">请试听并选择 A 的参考片段。</span><button id="cancel" class="small-button" hidden>取消处理</button></div>
+            <div class="job-title"><span id="status" role="status" aria-live="polite">先分离候选人声，再试听选择要保留的一轨。</span><button id="cancel" class="small-button" hidden>取消处理</button></div>
             <progress id="job-progress" max="1" value="0" aria-label="音频处理进度" hidden></progress>
           </div>
         </section>
         <aside class="inspector" aria-label="歌手参考与处理范围">
           <section>
-            <div class="section-heading"><span class="step">1</span><h2>告诉我谁是 A</h2></div>
+            <div class="section-heading"><span class="step">1</span><h2>选择处理方式</h2></div>
+            <label for="mode">分离方式</label>
+            <select id="mode"><option value="two-stage">双轨分离（推荐）</option><option value="legacy">参考歌手提取（旧版对照）</option></select>
+            <p id="two-stage-hint" class="small muted">先去伴奏，再分开两条候选人声。编号不代表固定歌手；每次重做后请重新试听。</p>
+            <div id="legacy-reference" hidden>
             <label for="reference-source">参考来自</label>
             <select id="reference-source"><option value="song">这首歌曲</option><option value="reference" disabled>单独的参考音频</option></select>
             <div class="reference-readout"><i class="reference-dot"></i><strong id="reference-range" class="numeric">00:00–00:03</strong><span class="small muted">3 秒</span></div>
@@ -83,23 +95,31 @@
             <button id="hear-reference" class="wide">循环试听这 3 秒</button>
             <button id="import-reference" class="link-button">导入单独参考音频</button>
             <p id="reference-name" class="small muted">选只有 A 演唱的片段，尽量避免 B 和明显干扰。</p>
+            </div>
           </section>
           <section>
             <div class="section-heading"><span class="step">2</span><h2>先试一个片段</h2></div>
             <p id="selection-readout" class="selection-readout numeric">00:00–00:00</p>
             <p id="selection-duration" class="small muted"></p>
             <details><summary>精确调整时间</summary><div class="time-fields"><label for="selection-start">开始 / 秒<input id="selection-start" type="number" min="0" step="0.01" value="0"></label><label for="selection-end">结束 / 秒<input id="selection-end" type="number" min="0" step="0.01" value="1"></label></div></details>
-            <button id="extract-selection" class="primary wide">提取 / 重做选区</button>
+            <button id="extract-selection" class="primary wide">分离 / 重做选区</button>
             <button id="extract-full" class="wide">处理整首歌曲</button>
-            <details class="advanced"><summary>模型与设备</summary><label for="device">计算设备</label><select id="device"><option value="auto">自动选择</option><option value="cuda">NVIDIA GPU</option><option value="cpu">CPU</option></select><label for="embedding-rate">参考采样率</label><select id="embedding-rate"><option value="16000">16 kHz（默认）</option><option value="44100">44.1 kHz（实验对照）</option></select></details>
+            <details class="advanced"><summary>模型与设备</summary><label for="device">计算设备</label><select id="device"><option value="auto">自动选择</option><option value="cuda">NVIDIA GPU</option><option value="cpu">CPU</option></select><div id="legacy-rate" hidden><label for="embedding-rate">参考采样率</label><select id="embedding-rate"><option value="44100">44.1 kHz（默认）</option><option value="16000">16 kHz（旧版对照）</option></select></div></details>
           </section>
           <section>
-            <div class="section-heading"><span class="step">3</span><h2>保存结果</h2></div>
+            <div class="section-heading"><span class="step">3</span><h2>选择并保存</h2></div>
+            <div id="candidate-controls" hidden>
+              <p id="candidate-scope" class="small muted"></p>
+              <label for="candidate-number">要保留的声音</label><select id="candidate-number"><option value="1">候选 1</option><option value="2">候选 2</option></select>
+              <button id="choose-selection" class="primary wide" disabled>将选中候选写入选区</button>
+              <button id="choose-full" class="wide" disabled>将选中候选写入整首</button>
+              <p class="small muted">可在换人的片段改选另一轨，也可撤销。候选轨只保留最近一次分离；已选入的目标轨保留。</p>
+            </div>
             <p id="coverage-label" class="small muted">已完成：0%</p>
             <button id="export-selection" class="wide" disabled>导出选区</button>
             <button id="export-full" class="wide" disabled>导出整首</button>
             <div id="downloads" aria-live="polite"></div>
-            <p class="small muted">目标与残差：单声道浮点 WAV，保留原采样率与时间位置。</p>
+            <p class="small muted">目标与残差：单声道浮点 WAV，保留原采样率与时间位置。双轨模型原生 24 kHz，导出升采样不会增加高频细节。</p>
           </section>
         </aside>
       </div>
@@ -107,6 +127,6 @@
     </section>
     <div id="global-status" class="global-status" role="status" aria-live="polite"></div>
   </main>
-  <footer><span>研究原型 · 重叠和声可能有串音，结果需要试听确认</span><span>模型：Singer-informed FiLM · 应用 v0.4.0</span></footer>
+  <footer><span>研究原型 · 候选轨可能串音或换人，请逐段试听确认</span><span>模型：Mel-Band RoFormer + UNMIXX · 应用 v0.5.0</span></footer>
 </body>
 </html>

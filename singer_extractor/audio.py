@@ -9,7 +9,7 @@ import soundfile as sf
 from scipy.signal import resample_poly
 
 
-def read_audio(path: str | Path):
+def read_audio(path: str | Path, mono=True):
     path = Path(path)
     if not path.is_file():
         raise ValueError("找不到音频文件，请重新选择。")
@@ -25,7 +25,7 @@ def read_audio(path: str | Path):
         raise ValueError("音频包含无效数值。")
     if audio.shape[1] > 2:
         raise ValueError("第一版只接受单声道或立体声音频。")
-    return audio.mean(axis=1, dtype=np.float32), int(rate)
+    return (audio.mean(axis=1, dtype=np.float32) if mono else audio), int(rate)
 
 
 def crop_audio(audio, rate, start=0.0, duration=None):

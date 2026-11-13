@@ -39,14 +39,15 @@ class Extractor:
         self.window = torch.hann_window(self.config["n_fft"], device=self.device)
 
     @torch.inference_mode()
-    def reference_embedding(self, reference, sample_rate, embedding_rate=16000):
+    def reference_embedding(self, reference, sample_rate, embedding_rate=44100):
         if embedding_rate not in (16000, 44100):
             raise ValueError("参考采样率必须是 16000 或 44100。")
         waveform = resample_exact(reference, sample_rate, embedding_rate)
         required = 3 * embedding_rate
         if len(waveform) < required:
             raise ValueError("参考片段至少需要完整 3 秒，且只有目标歌手在唱。")
-        # Fixed, repeatable 3-second reference, matching the training duration.
+        # Match separator embedding precomputation (44.1 kHz), not the separate
+        # encoder training loader (16 kHz). See docs/MODEL_NOTES.md.
         waveform = waveform[:required]
         peak = float(np.max(np.abs(waveform)))
         if peak < 1e-6:
@@ -78,7 +79,7 @@ class Extractor:
         return audio[0].cpu().numpy()
 
     def extract(
-        self, mixture, rate, reference, reference_rate, embedding_rate=16000, progress=None
+        self, mixture, rate, reference, reference_rate, embedding_rate=44100, progress=None
     ):
         embedding = self.reference_embedding(reference, reference_rate, embedding_rate)
         audio = resample_exact(mixture, rate, self.sample_rate)
@@ -100,7 +101,7 @@ def run_job(
     start=0.0,
     duration=None,
     output_dir=None,
-    embedding_rate=16000,
+    embedding_rate=44100,
     progress=None,
 ):
     began = time.perf_counter()

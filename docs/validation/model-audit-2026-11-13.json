@@ -1,0 +1,275 @@
+{
+  "scope": "Three short independent stems; three equal-RMS artificial mixtures, both target directions. No accompaniment. Not a representative benchmark.",
+  "reference_seconds": [
+    0,
+    3
+  ],
+  "evaluation_seconds": [
+    3.5,
+    8
+  ],
+  "source_rms": 0.1,
+  "inference": "Extractor.extract: 6-second chunks, 1-second overlap; pad/trim final chunk",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 5080",
+  "model_hashes": {
+    "embedding.pth": "5f52e199edc0a753378bfbf335408dd3044828c9989684f602765e7169fbc1fc",
+    "film.pth": "7f90116504450d01ed39d7515345b37e5e49bfed7df68e88887fe7c9aee8a012"
+  },
+  "sources": [
+    {
+      "index": 1,
+      "file": "public-source-1.wav",
+      "sha256": "0d97002937020f3c71482f569b5a9f6f51fded7c637d3ae4e05dae6face39fcd",
+      "url": "https://unmixx.github.io/static/audio/duet/1/LizNelson_Rainfall_RAW_03_01_-_seg_1.wav",
+      "artist_track": "LizNelson_Rainfall",
+      "license": "CC BY-NC-SA 4.0 (MedleyVox)"
+    },
+    {
+      "index": 2,
+      "file": "public-source-2.wav",
+      "sha256": "62ddf747d05d2c307e32e991eaa07514c9edf6d5f300d84691155c205c8b4cb1",
+      "url": "https://unmixx.github.io/static/audio/duet/2/NightPanther_Fire_RAW_02_03_-_seg_27.wav",
+      "artist_track": "NightPanther_Fire",
+      "license": "CC BY-NC-SA 4.0 (MedleyVox)"
+    },
+    {
+      "index": 3,
+      "file": "public-source-3.wav",
+      "sha256": "d57677a5aa738b03ef88e76220caba97a7ebc903a47345ff0d2138697a2cf668",
+      "url": "https://unmixx.github.io/static/audio/duet/3/Meaxic_TakeAStep_RAW_07_01_-_seg_21.wav",
+      "artist_track": "Meaxic_TakeAStep",
+      "license": "CC BY-NC-SA 4.0 (MedleyVox)"
+    }
+  ],
+  "summary": {
+    "16000": {
+      "evaluations": 6,
+      "target_si_sdri_mean_db": -4.282776334998274,
+      "target_better_than_mixture_count": 2,
+      "target_closer_than_interferer_count": 4
+    },
+    "44100": {
+      "evaluations": 6,
+      "target_si_sdri_mean_db": 4.582558241129075,
+      "target_better_than_mixture_count": 5,
+      "target_closer_than_interferer_count": 5
+    }
+  },
+  "records": [
+    {
+      "pair": [
+        1,
+        2
+      ],
+      "target": 1,
+      "embedding_rate": 16000,
+      "target_si_sdr_db": 2.950720202986716,
+      "interferer_si_sdr_db": -8.287864552265093,
+      "mixture_target_si_sdr_db": -0.10476133673612129,
+      "target_si_sdri_db": 3.055481539722837,
+      "solo_target_si_sdr_db": -22.639435880998665,
+      "absent_output_rms_vs_input_db": -32.08327762510085,
+      "absent_output_rms_vs_solo_target_db": 0.6889651723008721
+    },
+    {
+      "pair": [
+        1,
+        2
+      ],
+      "target": 1,
+      "embedding_rate": 44100,
+      "target_si_sdr_db": 6.729668272122163,
+      "interferer_si_sdr_db": -14.863536062898582,
+      "mixture_target_si_sdr_db": -0.10476133673612129,
+      "target_si_sdri_db": 6.834429608858285,
+      "solo_target_si_sdr_db": 12.342775087754363,
+      "absent_output_rms_vs_input_db": -22.180560528766534,
+      "absent_output_rms_vs_solo_target_db": -21.697249591184654
+    },
+    {
+      "pair": [
+        1,
+        2
+      ],
+      "target": 2,
+      "embedding_rate": 16000,
+      "target_si_sdr_db": -14.348112421811043,
+      "interferer_si_sdr_db": 6.273951430669048,
+      "mixture_target_si_sdr_db": -0.10475511152440524,
+      "target_si_sdri_db": -14.243357310286639,
+      "solo_target_si_sdr_db": -11.868630920040989,
+      "absent_output_rms_vs_input_db": 4.326918826346326,
+      "absent_output_rms_vs_solo_target_db": 33.249258609887555
+    },
+    {
+      "pair": [
+        1,
+        2
+      ],
+      "target": 2,
+      "embedding_rate": 44100,
+      "target_si_sdr_db": -7.657138674810998,
+      "interferer_si_sdr_db": 3.5778627811327404,
+      "mixture_target_si_sdr_db": -0.10475511152440524,
+      "target_si_sdri_db": -7.552383563286592,
+      "solo_target_si_sdr_db": -1.3002357657399157,
+      "absent_output_rms_vs_input_db": 1.1303370205915075,
+      "absent_output_rms_vs_solo_target_db": 13.614222342766894
+    },
+    {
+      "pair": [
+        1,
+        3
+      ],
+      "target": 1,
+      "embedding_rate": 16000,
+      "target_si_sdr_db": -15.917859714542804,
+      "interferer_si_sdr_db": 3.9041638668906447,
+      "mixture_target_si_sdr_db": 0.006603167459638459,
+      "target_si_sdri_db": -15.924462882002443,
+      "solo_target_si_sdr_db": -22.639435880998665,
+      "absent_output_rms_vs_input_db": -35.528159379328535,
+      "absent_output_rms_vs_solo_target_db": -2.7559172387392157
+    },
+    {
+      "pair": [
+        1,
+        3
+      ],
+      "target": 1,
+      "embedding_rate": 44100,
+      "target_si_sdr_db": 10.596448681339956,
+      "interferer_si_sdr_db": -24.123871188874784,
+      "mixture_target_si_sdr_db": 0.006603167459638459,
+      "target_si_sdri_db": 10.589845513880316,
+      "solo_target_si_sdr_db": 12.342775087754363,
+      "absent_output_rms_vs_input_db": -27.5658408672953,
+      "absent_output_rms_vs_solo_target_db": -27.08253058652582
+    },
+    {
+      "pair": [
+        1,
+        3
+      ],
+      "target": 3,
+      "embedding_rate": 16000,
+      "target_si_sdr_db": -0.22508905283743855,
+      "interferer_si_sdr_db": -6.230627967890397,
+      "mixture_target_si_sdr_db": 0.006602352813474334,
+      "target_si_sdri_db": -0.23169140565091287,
+      "solo_target_si_sdr_db": 10.611995879189983,
+      "absent_output_rms_vs_input_db": -10.654544096134765,
+      "absent_output_rms_vs_solo_target_db": -8.590512726381881
+    },
+    {
+      "pair": [
+        1,
+        3
+      ],
+      "target": 3,
+      "embedding_rate": 44100,
+      "target_si_sdr_db": 9.089170464650437,
+      "interferer_si_sdr_db": -27.919246211774436,
+      "mixture_target_si_sdr_db": 0.006602352813474334,
+      "target_si_sdri_db": 9.082568111836963,
+      "solo_target_si_sdr_db": 13.332921400156842,
+      "absent_output_rms_vs_input_db": -19.611578133014447,
+      "absent_output_rms_vs_solo_target_db": -25.347218630347896
+    },
+    {
+      "pair": [
+        2,
+        3
+      ],
+      "target": 2,
+      "embedding_rate": 16000,
+      "target_si_sdr_db": 3.151410117242009,
+      "interferer_si_sdr_db": -19.85982107998273,
+      "mixture_target_si_sdr_db": 0.000582452437141936,
+      "target_si_sdri_db": 3.1508276648048668,
+      "solo_target_si_sdr_db": -11.868630920040989,
+      "absent_output_rms_vs_input_db": -33.633411513803935,
+      "absent_output_rms_vs_solo_target_db": -4.71107223321272
+    },
+    {
+      "pair": [
+        2,
+        3
+      ],
+      "target": 2,
+      "embedding_rate": 44100,
+      "target_si_sdr_db": 4.379143776637058,
+      "interferer_si_sdr_db": -18.064556019278,
+      "mixture_target_si_sdr_db": 0.000582452437141936,
+      "target_si_sdri_db": 4.378561324199916,
+      "solo_target_si_sdr_db": -1.3002357657399157,
+      "absent_output_rms_vs_input_db": -19.809867137592345,
+      "absent_output_rms_vs_solo_target_db": -7.325982318366978
+    },
+    {
+      "pair": [
+        2,
+        3
+      ],
+      "target": 3,
+      "embedding_rate": 16000,
+      "target_si_sdr_db": -1.502880129341487,
+      "interferer_si_sdr_db": -1.7283600593972723,
+      "mixture_target_si_sdr_db": 0.0005754872358600028,
+      "target_si_sdri_db": -1.5034556165773472,
+      "solo_target_si_sdr_db": 10.611995879189983,
+      "absent_output_rms_vs_input_db": -5.571894035116473,
+      "absent_output_rms_vs_solo_target_db": -3.507862511501209
+    },
+    {
+      "pair": [
+        2,
+        3
+      ],
+      "target": 3,
+      "embedding_rate": 44100,
+      "target_si_sdr_db": 4.162903938521419,
+      "interferer_si_sdr_db": -8.321705060533677,
+      "mixture_target_si_sdr_db": 0.0005754872358600028,
+      "target_si_sdri_db": 4.162328451285559,
+      "solo_target_si_sdr_db": 13.332921400156842,
+      "absent_output_rms_vs_input_db": -24.74621716669604,
+      "absent_output_rms_vs_solo_target_db": -30.481857510167107
+    }
+  ],
+  "upstream_repository": "https://github.com/jocelynxu01/singer-separation-paper",
+  "upstream_commit": "3f6ce09d53750b55f52801a24efff369dbd04846",
+  "source_page": "https://unmixx.github.io/",
+  "dataset": "https://zenodo.org/records/7984549",
+  "date": "2026-11-13",
+  "torch": "2.7.1+cu128",
+  "upstream_parity": {
+    "16000": {
+      "embedding_max_abs_difference": 0.0,
+      "waveform": {
+        "cosine": 0.9999999999804529,
+        "b_vs_a_gain": 1.0000001576322255,
+        "relative_rms_difference": 6.25477830056108e-06,
+        "gain_aligned_difference_fraction": 6.252790684453785e-06,
+        "max_abs_difference": 2.104043960571289e-05
+      }
+    },
+    "44100": {
+      "embedding_max_abs_difference": 0.0,
+      "waveform": {
+        "cosine": 0.9999999999822186,
+        "b_vs_a_gain": 0.9999987018715787,
+        "relative_rms_difference": 6.103368519205396e-06,
+        "gain_aligned_difference_fraction": 5.963728885220417e-06,
+        "max_abs_difference": 2.4259090423583984e-05
+      }
+    }
+  },
+  "limitations": [
+    "Only three short vocal stems, not representative of commercial recordings.",
+    "Independent stems are labeled Ground Truth by the demo page; no independent identity annotation verification.",
+    "The 44.1 kHz setting still failed one of six extraction directions and its corresponding target-absent test.",
+    "User-song reference is not confirmed solo and rerun has not been audition-accepted."
+  ]
+}
