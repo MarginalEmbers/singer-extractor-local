@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Singer Extractor · 时间线工作台</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/assets/style.css?v=0.2.0">
+  <script type="module" src="/assets/app.js?v=0.2.0"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-symbol" aria-hidden="true">≋</span><span>SINGER EXTRACTOR <small>时间线工作台</small></span></div>
+    <div class="header-actions"><span id="health" class="pill">检查环境…</span><span class="version">v0.2.0 · 本地运行</span></div>
+  </header>
+  <main id="drop-zone">
+    <section id="empty" class="empty">
+      <span class="eyebrow">从一段参考，找到那位歌手</span>
+      <h1>把歌曲放到时间线上。</h1>
+      <p>框选目标歌手独唱的 3 秒，先试听一个片段，再处理整首。</p>
+      <button class="primary large" id="import-first">选择歌曲</button>
+      <p class="muted small">也可以拖入 WAV、FLAC、MP3、OGG 文件 · 音频留在本机</p>
+      <button class="link-button" id="demo">没有歌曲？载入功能自检音频</button>
+      <span class="muted small">自检音是合成信号，只检查操作流程，不代表歌声分离效果。</span>
+    </section>
+    <input type="file" id="song-file" accept=".wav,.flac,.mp3,.ogg" hidden>
+    <input type="file" id="reference-file" accept=".wav,.flac,.mp3,.ogg" hidden>
+    <section id="workspace" hidden>
+      <div class="project-header">
+        <div class="project-title"><span class="eyebrow">当前歌曲</span><h1 id="song-name"></h1><span id="song-meta" class="muted small"></span></div>
+        <button id="import-next">换一首歌曲</button>
+      </div>
+      <div id="demo-notice" class="notice" hidden>当前是合成自检音，不是真实歌曲。这里可以验证选区、推理、撤销和导出流程。</div>
+      <div class="studio">
+        <section class="editor" aria-label="音频时间线">
+          <div class="toolbar">
+            <label class="inline-label" for="tool">工具
+              <select id="tool"><option value="selection">框选预览</option><option value="reference">参考 3 秒（原曲）</option><option value="seek">移动播放头</option></select>
+            </label>
+            <span class="toolbar-spacer"></span>
+            <label class="zoom-label" for="zoom">缩放 <output id="zoom-value">1×</output><input id="zoom" type="range" min="1" max="32" step="1" value="1"></label>
+            <button id="fit" class="small-button">全曲</button>
+          </div>
+          <div class="ruler-row"><div class="muted small">时间 / 秒</div><canvas id="ruler" height="28" aria-label="歌曲时间刻度"></canvas></div>
+          <div class="track-row">
+            <div class="track-label"><span>原曲</span><small>A＋B＋伴奏</small><button class="solo" data-monitor="original" aria-pressed="true" aria-label="试听原曲">试听</button></div>
+            <div class="wave-wrap" data-track="original" id="source-wave"><canvas class="wave" aria-label="原曲波形，拖动框选，点击定位"></canvas><div class="selection-overlay"></div><div class="reference-overlay"></div><div class="playhead"></div></div>
+          </div>
+          <div class="track-row">
+            <div class="track-label"><span>目标 A</span><small id="target-state">尚未处理</small><button class="solo" data-monitor="target" aria-pressed="false" aria-label="试听目标 A">试听</button></div>
+            <div class="wave-wrap" data-track="target"><canvas class="wave" aria-label="目标歌手结果波形，灰色区域尚未处理"></canvas><div class="selection-overlay"></div><div class="playhead"></div></div>
+          </div>
+          <div class="track-row">
+            <div class="track-label"><span>残差</span><small>伴奏＋其他</small><button class="solo" data-monitor="residual" aria-pressed="false" aria-label="试听残差">试听</button></div>
+            <div class="wave-wrap" data-track="residual"><canvas class="wave" aria-label="残差音轨波形"></canvas><div class="selection-overlay"></div><div class="playhead"></div></div>
+          </div>
+          <div class="pan-row"><label for="pan">平移</label><input id="pan" type="range" min="0" max="0" step="0.01" value="0" aria-label="平移时间线"><span id="view-range" class="small numeric"></span></div>
+          <div class="legend"><span><i class="swatch reference"></i>3 秒参考</span><span><i class="swatch selected"></i>预览选区</span><span><i class="swatch unprocessed"></i>尚未处理</span></div>
+          <div class="transport">
+            <button id="play" class="primary" aria-pressed="false">播放</button>
+            <span id="clock" class="clock numeric">00:00.0</span><span class="muted">/ <span id="total-time" class="numeric">00:00</span></span>
+            <label class="check"><input id="loop" type="checkbox">循环选区</label>
+            <label class="volume-label" for="volume">音量<input id="volume" type="range" min="0" max="100" value="75" aria-label="试听音量"></label>
+          </div>
+          <label class="seek-label" for="seek"><span id="monitor-label">正在试听：原曲</span><span>切换音轨，保持播放位置</span></label>
+          <input id="seek" type="range" min="0" max="1" step="0.01" value="0" aria-label="播放位置，秒">
+          <div class="edit-bar"><button id="mute">选区只有 B → 静音</button><button id="undo" disabled>撤销上一步</button><span class="muted small">静音和重做只修改选区；边缘做短淡化。</span></div>
+          <div class="job-panel">
+            <div class="job-title"><span id="status" role="status" aria-live="polite">请试听并选择 A 的参考片段。</span><button id="cancel" class="small-button" hidden>取消处理</button></div>
+            <progress id="job-progress" max="1" value="0" aria-label="音频处理进度" hidden></progress>
+          </div>
+        </section>
+        <aside class="inspector" aria-label="歌手参考与处理范围">
+          <section>
+            <div class="section-heading"><span class="step">1</span><h2>告诉我谁是 A</h2></div>
+            <label for="reference-source">参考来自</label>
+            <select id="reference-source"><option value="song">这首歌曲</option><option value="reference" disabled>单独的参考音频</option></select>
+            <div class="reference-readout"><i class="reference-dot"></i><strong id="reference-range" class="numeric">00:00–00:03</strong><span class="small muted">3 秒</span></div>
+            <label for="reference-start" class="small muted">参考起点（秒）</label>
+            <input id="reference-start" type="number" min="0" step="0.01" value="0">
+            <input id="reference-slider" type="range" min="0" max="0" step="0.01" value="0" aria-label="调整参考片段起点">
+            <button id="hear-reference" class="wide">循环试听这 3 秒</button>
+            <button id="import-reference" class="link-button">导入单独参考音频</button>
+            <p id="reference-name" class="small muted">选只有 A 演唱的片段，尽量避免 B 和明显干扰。</p>
+          </section>
+          <section>
+            <div class="section-heading"><span class="step">2</span><h2>先试一个片段</h2></div>
+            <p id="selection-readout" class="selection-readout numeric">00:00–00:00</p>
+            <p id="selection-duration" class="small muted"></p>
+            <details><summary>精确调整时间</summary><div class="time-fields"><label for="selection-start">开始 / 秒<input id="selection-start" type="number" min="0" step="0.01" value="0"></label><label for="selection-end">结束 / 秒<input id="selection-end" type="number" min="0" step="0.01" value="1"></label></div></details>
+            <button id="extract-selection" class="primary wide">提取 / 重做选区</button>
+            <button id="extract-full" class="wide">处理整首歌曲</button>
+            <details class="advanced"><summary>模型与设备</summary><label for="device">计算设备</label><select id="device"><option value="auto">自动选择</option><option value="cuda">NVIDIA GPU</option><option value="cpu">CPU</option></select><label for="embedding-rate">参考采样率</label><select id="embedding-rate"><option value="16000">16 kHz（默认）</option><option value="44100">44.1 kHz（实验对照）</option></select></details>
+          </section>
+          <section>
+            <div class="section-heading"><span class="step">3</span><h2>保存结果</h2></div>
+            <p id="coverage-label" class="small muted">已完成：0%</p>
+            <button id="export-selection" class="wide" disabled>导出选区</button>
+            <button id="export-full" class="wide" disabled>导出整首</button>
+            <div id="downloads" aria-live="polite"></div>
+            <p class="small muted">目标与残差：单声道浮点 WAV，保留原采样率与时间位置。</p>
+          </section>
+        </aside>
+      </div>
+      <div class="footnote"><span>Space 播放 / 暂停 · I / O 设选区边界 · A / B 对比原曲与目标 · Ctrl+Z 撤销</span><span>关闭服务前请导出；编辑历史仅在本次运行中保留。</span></div>
+    </section>
+    <div id="global-status" class="global-status" role="status" aria-live="polite"></div>
+  </main>
+  <footer><span>研究原型 · 重叠和声可能有串音，结果需要试听确认</span><span>模型：Singer-informed FiLM · 应用 v0.2.0</span></footer>
+</body>
+</html>

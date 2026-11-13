@@ -9,7 +9,9 @@ def main():
     parser = argparse.ArgumentParser(description="Local target singer extraction (experimental)")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("download-models", help="Download the two official checkpoints")
-    commands.add_parser("ui", help="Open the local interface")
+    ui = commands.add_parser("ui", help="Open the local timeline interface")
+    ui.add_argument("--no-browser", action="store_true", help="Do not open a browser tab")
+    ui.add_argument("--port", type=int, default=7860)
     commands.add_parser("doctor", help="Check GPU, packages and model hashes")
     extract = commands.add_parser("extract", help="Extract using a 3-second reference")
     extract.add_argument("song")
@@ -27,7 +29,7 @@ def main():
         elif args.command == "ui":
             from .ui import launch
 
-            launch()
+            launch(inbrowser=not args.no_browser, port=args.port)
         elif args.command == "doctor":
             from .doctor import diagnose
 

@@ -10,6 +10,7 @@ import soundfile as sf
 import torch
 
 from .audio import crop_audio, overlap_add, read_audio, resample_exact
+from . import __version__
 from .models import SingerEmbedding, SingerFiLM
 from .weights import ROOT, manifest, verify_weights
 
@@ -121,7 +122,7 @@ def run_job(
     for name, data in (("target", target), ("original", mixture), ("residual", mixture - target)):
         sf.write(paths[name], data, rate, subtype="FLOAT")
     report = {
-        "version": "0.1.0",
+        "version": __version__,
         "model": extractor.config["variant"],
         "device": extractor.device,
         "torch": torch.__version__,
