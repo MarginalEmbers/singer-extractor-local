@@ -25,6 +25,21 @@ terms; this repository does not assert that the checkpoints are MIT-licensed.
 
 ## Windows desktop distribution
 
+The v0.4.0 **online package** ships the application source and the unmodified
+uv 0.12.7 Windows installer helper ([source and release](https://github.com/astral-sh/uv/releases/tag/0.12.7)).
+Its MIT and Apache-2.0 license texts are in `LICENSES/uv-MIT.txt` and
+`LICENSES/uv-APACHE.txt`. It does not ship Python, PyTorch, CUDA or Qt binaries.
+At the user's installation request, uv obtains Python 3.11.16, PyTorch 2.7.1+cu128
+from the official PyTorch index, and dependencies from PyPI using the pinned
+`requirements-runtime.lock` / `requirements-ui.lock` files. Installed packages
+retain their original license files in the dedicated runtime's site-packages.
+Qt shared libraries remain separate and replaceable in that environment; the
+application imposes no additional restriction on modification or debugging.
+The launcher's package-integrity check can be regenerated with the documented
+build script when modifying the distributed application files.
+
+The following description applies to the larger **v0.3.0 portable package**:
+
 The Windows portable build bundles Python 3.11.16, PyTorch 2.7.1+cu128 and its
 CUDA runtime libraries, PySide6 / Shiboken 6.12.0, Qt 6.12.0, Qt WebEngine
 6.140.0 and the runtime dependencies pinned in `requirements-desktop.lock`.

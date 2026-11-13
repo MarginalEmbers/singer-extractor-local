@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import __version__
 from .desktop_backend import APP_NAME, DesktopBackend, portable_directory
+from .environment import startup_advice
 
 
 def configure_logging(directory):
@@ -43,8 +44,8 @@ def main():
     parser.add_argument("--offline", action="store_true", help="Do not download missing models")
     args = parser.parse_args()
     args.data_dir = args.data_dir.resolve()
+    configure_logging(args.data_dir)
     if args.self_test:
-        configure_logging(args.data_dir)
         from .portable_check import diagnose_bundle
 
         diagnose_bundle(args.data_dir, args.self_test, download=not args.offline)
@@ -72,13 +73,6 @@ def main():
     icon = Path(__file__).parent / "web" / "app.ico"
     if icon.exists():
         app.setWindowIcon(QIcon(str(icon)))
-    try:
-        configure_logging(args.data_dir)
-    except OSError:
-        QMessageBox.critical(
-            None, APP_NAME, "无法写入软件文件夹。请完整解压到可写位置，再双击 EXE。"
-        )
-        return
     lock = QLockFile(str(args.data_dir / "desktop.lock"))
     if not lock.tryLock(0):
         QMessageBox.information(None, APP_NAME, "程序已经在运行，请切换到已有窗口。")
@@ -100,7 +94,7 @@ def main():
             except Exception as exc:
                 logging.exception("Desktop startup failed")
                 self.backend.stop()
-                self.failed.emit(str(exc))
+                self.failed.emit(startup_advice(exc) + "\n\n详细信息：" + str(exc))
 
     class LocalPage(QWebEnginePage):
         def acceptNavigationRequest(self, url, kind, is_main_frame):
@@ -162,7 +156,7 @@ def main():
                 lambda: QMessageBox.information(
                     self,
                     APP_NAME,
-                    f"{APP_NAME}\nv{__version__}\n\n本机 GPU 处理，内置 Python 与界面引擎。\n"
+                    f"{APP_NAME}\nv{__version__}\n\n使用本机运行环境与独立桌面窗口。\n"
                     "研究模型可能有串音，导出前请试听。\n\n"
                     "模型：Jocelyn Xu、Minje Kim 的 Singer-Informed Vocal Source Separation\n"
                     "for Multi-Singer Music Mixtures（2026），FiLM / target-vocal loss only。\n"
@@ -194,7 +188,7 @@ def main():
         def show_error(self, message):
             if self.closing:
                 return
-            self.message.setText("启动未完成：" + message + "\n请检查网络后重试；也可查看日志。")
+            self.message.setText("启动未完成：\n" + message)
             self.progress.hide()
             self.retry.show()
 

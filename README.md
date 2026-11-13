@@ -3,8 +3,8 @@
 根据一段目标歌手的参考声音，从双人歌曲中尝试提取该歌手的人声。
 面向 Windows + NVIDIA GPU，提供中文多轨时间线、片段预览和完整 WAV 导出。
 
-**v0.3.0：Windows 独立桌面版。** 无需自己安装 Python，无需打开浏览器。
-[下载发布版](https://github.com/MarginalEmbers/singer-extractor-local/releases/tag/v0.3.0) · [更新记录](CHANGELOG.md)
+**v0.4.0：Windows 小包在线安装版。** 首次提示并安装所需环境，之后双击打开独立窗口。
+[下载发布版](https://github.com/MarginalEmbers/singer-extractor-local/releases/tag/v0.4.0) · [更新记录](CHANGELOG.md)
 
 模型基于 **Jocelyn Xu、Minje Kim（2026）** 的
 [Singer-Informed Vocal Source Separation for Multi-Singer Music Mixtures](https://arxiv.org/abs/2608.14516)
@@ -31,14 +31,24 @@
 
 ## Windows 桌面版
 
-1. 从 Releases 下载 Windows 便携包，**完整解压**到可写文件夹。
-2. 双击 `哦，金金的音道分离.exe`，打开独立软件窗口。
-3. 首次启动自动从作者公开地址下载并校验约 29 MB 模型；之后可离线处理。
+1. 从 Releases 下载 `Windows-Online.zip`，**完整解压**到可写文件夹。
+2. 双击 `哦，金金的音道分离.exe`。环境缺失时，点击“安装运行环境”。
+3. 首次安装会下载约 **3–4 GB** Python、Qt 和 GPU 推理库；请预留至少 **12 GiB** 空间。
+4. 检查通过后点击“启动软件（GPU）”，从作者公开地址准备并校验约 29 MB 模型。
+5. 此后双击主 EXE，自动检查并打开独立窗口，模型就绪后可离线处理。
 
-保留 EXE 旁的 `_internal` 文件夹；转发给朋友时请发完整压缩包。
-运行环境已包含 Python、Qt WebEngine、PyTorch 2.7.1+cu128 和 CUDA 运行库。
-仍需要机器本身的 NVIDIA 驱动，无需安装 Python、uv 或 CUDA Toolkit。
+小包不再内置 Python/PyTorch，**减少的是发布包大小，不是总下载量或最终磁盘占用**。
+本次 ZIP 为约 **17.4 MB**，旧版便携 7z 为约 **2.14 GB**（按文件实际字节数比较，减少约 99.2%）。
+保留 EXE 旁的 `app`、`tools`、锁文件和文件清单，转发时请发整个 ZIP。
+环境装在 `%LOCALAPPDATA%\JinjinAudio\runtime-cu128-py311-v1`，不修改系统 Python 或 PATH。
+仍使用 PyTorch **2.7.1+cu128**；没有删掉 CUDA GPU 加速或改动模型计算。
+需要 Windows 10/11 x64（系统自带 .NET Framework 4.x）和兼容的 NVIDIA 驱动，无需 CUDA Toolkit。
+“检查运行环境.exe”可重新检查或修复：Python、依赖版本、DLL 加载、GPU 实际运算、模型和写入权限。
+GPU 不可用时明确提示更新驱动，可选择 CPU 继续；DLL 错误提供微软 VC++ x64 运行库入口。
+安装失败显示步骤和日志，允许重试；模型缺失/损坏由主窗口重新下载。
 界面使用内置引擎，本机服务监听随机 `127.0.0.1` 端口；不会启动外部浏览器。
+
+如果需要环境随包携带，可继续使用较大的 [v0.3.0 便携包](https://github.com/MarginalEmbers/singer-extractor-local/releases/tag/v0.3.0)。
 
 导出在软件旁 `data/outputs`，可从“文件 → 打开导出文件夹”进入。
 模型、缓存、日志分别在 `data/models`、`data/cache`、`data/logs`。
@@ -48,7 +58,7 @@ Windows x64 + RTX 5080 已测试；RTX 5090 尚需在接收方电脑验收。
 
 ## 源代码运行（开发者）
 
-源代码版保留原有浏览器入口。下面的安装步骤不适用于已经下载桌面便携包的用户。
+源代码版保留原有浏览器入口。下面的安装步骤不适用于已经下载桌面发布包的用户。
 
 1. 安装 NVIDIA 驱动，以及官方 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
 2. 下载仓库 ZIP 并解压，或使用 Git 克隆。

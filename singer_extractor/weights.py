@@ -25,7 +25,9 @@ def verify_weights(directory):
     for item in manifest()["files"]:
         path = directory / item["name"]
         if not path.is_file():
-            raise ValueError(f"缺少模型 {item['name']}。请先运行 download_models.bat。")
+            raise ValueError(
+                f"缺少模型 {item['name']}。桌面版会自动准备；源码版请运行 download_models.bat。"
+            )
         if sha256(path) != item["sha256"]:
             raise ValueError(f"模型 {item['name']} 校验失败，请重新下载官方权重。")
 
