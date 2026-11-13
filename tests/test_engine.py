@@ -25,12 +25,12 @@ def test_invalid_device_is_rejected():
         choose_device("imaginary")
 
 
-def test_ui_can_be_constructed_without_weights_or_network():
+def test_ui_can_be_constructed_without_weights_or_network(tmp_path):
     from singer_extractor.ui import build_app
 
-    app = build_app()
+    app = build_app(tmp_path / "cache", tmp_path / "exports")
     assert app.title == "Singer Extractor · 目标歌手提取"
-    app.close()
+    app.state.workspace.close()
 
 
 def test_export_alignment_residual_and_private_paths(tmp_path):
