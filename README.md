@@ -1,0 +1,107 @@
+# Singer Extractor Local
+
+根据一段目标歌手的参考声音，从双人歌曲中尝试提取该歌手的人声。
+面向 Windows + NVIDIA GPU，提供中文本地界面、片段预览和完整 WAV 导出。
+
+**状态：实验原型。** 已接入作者公开的 FiLM 权重；没有真实歌曲试听结论。
+分离结果可能包含另一位歌手、伴奏残留或失真，不能保证去除全部串音。
+
+## 它做什么
+
+- 选择歌曲，再选择目标歌手独唱的 3 秒参考片段。
+- 参考可来自这首歌，也可来自单独的音频文件。
+- 先处理指定片段，再处理整首。
+- 导出目标音轨、残差音轨和不含文件路径的 JSON 处理记录。
+- 整首导出保留输入采样率、样本数量和时间位置；输出为单声道 32-bit float WAV。
+- 在本机运行；界面只监听 `127.0.0.1`，关闭公开分享及 Gradio 使用统计。
+
+这是**按歌手提取**，目标歌手自己的主唱、和声、叠唱都属于目标。
+它不支持按旋律挑选声部，也没有自动标注歌手时间段的功能。
+
+## Windows 安装
+
+当前交付为源代码版，需要首次联网安装。它还不是内置全部运行时的便携 EXE。
+
+1. 安装 NVIDIA 驱动，以及官方 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
+2. 下载仓库 ZIP 并解压，或使用 Git 克隆。
+3. 双击 `setup.bat`，创建独立 Python 3.11 环境并安装依赖。
+4. 双击 `download_models.bat`，下载并校验作者的两个模型文件。
+5. 双击 `check_environment.bat` 检查显卡，再双击 `start.bat`。
+6. 浏览器会打开 `http://127.0.0.1:7860`。处理期间保留启动窗口；关闭窗口即停止服务。
+
+安装不会替换系统 Python。PyTorch 使用固定的 `2.7.1+cu128` 构建，支持本项目
+RTX 5080 测试环境；朋友的 RTX 5090 尚需单独验收。下载 PyTorch 约需 3 GB。
+首次安装完成后，音频推理不需要访问网络。详细验证范围见 [验证记录](docs/VALIDATION.md)。
+
+## 第一次使用
+
+1. 导入 WAV、FLAC、MP3 或 OGG；其他格式先转换为 WAV。
+2. 找到只有目标歌手演唱的连续 3 秒，填入“参考片段起点”。
+3. 点击“试听这 3 秒参考”，确认没有选错人，也没有混入另一位歌手。
+4. 选择包含重叠演唱的预览片段，点击“提取预览片段”。
+5. 对比原音与目标输出，满意后点击“提取整首歌曲”。
+
+结果保存在项目 `outputs/` 下，每次任务使用独立目录，不覆盖以前的结果。
+`residual.wav` 是“单声道原音减去目标输出”，包含伴奏、其他歌手以及分离误差，
+**不是保证纯净的另一位歌手音轨**。模型也不能保证目标未出现时完全静音。
+
+输出采用浮点 WAV，避免超出幅度范围时在写文件阶段削波。如果提示峰值超过 0 dBFS，
+请在播放或混音软件中降低音量。没有做自动响度美化或分段归一化。
+
+## 命令行
+
+在 **Windows PowerShell 的项目根目录**运行：
+
+```powershell
+# 从歌曲第 20 秒开始取 3 秒参考，预览第 60 秒之后的 30 秒
+.\.venv\Scripts\python.exe -m singer_extractor.cli extract "D:\Music\duet.wav" --reference-start 20 --start 60 --duration 30 --device cuda
+
+# 用单独参考文件提取整首，参考取该文件的前 3 秒
+.\.venv\Scripts\python.exe -m singer_extractor.cli extract "D:\Music\duet.wav" --reference "D:\Music\singer-a.wav" --device cuda
+
+# 检查环境与模型文件
+.\.venv\Scripts\python.exe -m singer_extractor.cli doctor
+```
+
+示例路径需要替换为你自己的文件。CPU 模式可用 `--device cpu`，速度应单独测量。
+片段输出从文件第 0 秒开始，原曲位置记录在 `report.json` 的 `start_seconds` 中。
+
+## 模型与工程选择
+
+本项目基于 Jocelyn Xu 和 Minje Kim 的
+[Singer-Informed Vocal Source Separation for Multi-Singer Music Mixtures](https://arxiv.org/abs/2608.14516)
+及[作者代码](https://github.com/jocelynxu01/singer-separation-paper)，不宣称原创模型。
+
+- 选择 **FiLM / target-vocal loss only** 权重；本项目不是论文最高分 Concat 变体的复现。
+- 歌曲转为 44.1 kHz 单声道，6 秒分段、1 秒重叠处理，再恢复原始采样率和长度。
+- 参考片段固定为 3 秒，默认按歌手编码器训练代码使用 16 kHz。
+- 上游预计算脚本保留原始采样率，存在与编码器训练设置不一致的情况。因此界面保留
+  44.1 kHz 参考采样率作为实验选项，并在处理记录中保存选择。
+- 分段推理与论文整段评估不同，可能影响音质。论文指标不能作为本应用的实测指标。
+
+具体核对记录见 [模型说明](docs/MODEL_NOTES.md)。代码、模型、歌曲的授权范围不同，
+见 [第三方说明](THIRD_PARTY_NOTICES.md)。
+
+## 开发与测试
+
+在 Windows PowerShell 的项目根目录运行：
+
+```powershell
+uv pip install --python .venv\Scripts\python.exe -e ".[dev]"
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\ruff.exe check .
+```
+
+没有下载模型时，真实权重集成测试会跳过，其余测试仍可运行。
+测试中的合成音只验证程序行为，不是歌声分离效果证明。
+
+Git 不跟踪模型、音频、导出结果、缓存和运行环境。
+
+## 接下来
+
+- 用真实双人歌曲比较换参考、目标缺席、同时唱和声等情况。
+- 比较直接提取与先去伴奏两条路线。
+- 增加“只有 A / 只有 B / 同时唱”的时间段手动修正。
+- 在 RTX 5090 上实测后制作便携运行包。
+
+应用代码采用 MIT License；外部模型权重不在此授权范围内。
